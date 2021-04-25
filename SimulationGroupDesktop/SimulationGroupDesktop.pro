@@ -10,10 +10,16 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    src/core/cell.cpp \
+    src/core/map.cpp \
+    src/core/model.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    src/core/cell.h \
+    src/core/map.h \
+    src/core/model.h
 
 FORMS += \
     mainwindow.ui
