@@ -14,6 +14,10 @@ public:
     }
     void update(int nowTime);
     void addAction(Action* action){actions.push_back(action);}
+    void clearAction(){
+        for(Action *action:actions){delete action;}
+        actions.clear();
+    }
     void setNeighborRule(std::vector<std::pair<int,int>> &relCoos);//[{x差值,y差值}]
     std::vector<std::pair<int,int>>& getNeighborRule(){return relCoos;}
     //状态参数设置
@@ -28,6 +32,7 @@ public:
 public:
     Map map;//创建地图
     std::vector<Cell> cells;
+    int neighborRuleType=0;
     //内置邻居规则//???static附初始值总为空
     std::vector<std::pair<int,int>> relCoosF={{0,-1},{-1,0},{1,0},{0,1}};//冯诺依曼型
     std::vector<std::pair<int,int>> relCoosM={{-1,-1},{0,-1},{1,-1},{-1,0},{1,0},{-1,1},{0,1},{1,1}};//摩尔型
@@ -37,6 +42,7 @@ public:
 private:
     std::vector<Action*> actions;
     std::vector<std::pair<int,int>> relCoos;    //邻居规则
+
 private:
     void updateNeighbor();
 };

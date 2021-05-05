@@ -24,6 +24,7 @@ SOURCES += \
     src/data/rule/sandaction.cpp \
     src/data/rule/voteaction.cpp \
     src/data/rule/wlaction.cpp \
+    src/tool/ShellTool.cpp \
     src/tool/expanalysis.cpp
 
 HEADERS += \
@@ -41,6 +42,7 @@ HEADERS += \
     src/data/rule/sandaction.h \
     src/data/rule/voteaction.h \
     src/data/rule/wlaction.h \
+    src/tool/ShellTool.h \
     src/tool/expanalysis.h
 
 FORMS += \
@@ -55,3 +57,6 @@ TRANSLATIONS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    resource.qrc

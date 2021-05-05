@@ -6,18 +6,23 @@ SandAction::SandAction()
 }
 
 void SandAction::execute(Cell &cell,int nowTime){
-    if(cell.getState() < cell.neighbors.size()){
-        cell.update(cell.getState());
-        return;
+    int lastTime=nowTime-1;
+    int nowState=cell.getState(nowTime);
+    if(nowState!=-1){
+        nowState+=cell.getState(lastTime);
+    }else{
+        nowState=cell.getState(lastTime);
     }
-    int nextTime=cell.latestTime()+1;
-    for(Cell *nc:cell.neighbors){
-        int nextState=nc->getState(nextTime);
-        if(nextState!=-1){
-            nc->update(nextState+1,nextTime);
-        }else{
-            nc->update(nc->getState()+1,nextTime);
+    if(cell.getState(lastTime) >= cell.neighbors.size()){
+        for(Cell *nc:cell.neighbors){
+            int state=nc->getState(nowTime);
+            if(state!=-1){
+                nc->update(state+1,nowTime);
+            }else{
+                nc->update(1,nowTime);
+            }
         }
+        nowState-=cell.neighbors.size();
     }
-    cell.update(cell.getState()-cell.neighbors.size(),nextTime);
+    cell.update(nowState,nowTime);
 }

@@ -21,11 +21,36 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
     ui->actionTable->setColumnWidth(0,240);
     ui->actionTable->setColumnWidth(1,50);
     ui->actionTable->verticalHeader()->setMinimumWidth(20);
+    ui->comboBox->setCurrentIndex(controller->getModelNeighborRuleType());
+    update();
 }
 
 ModelSetting::~ModelSetting()
 {
     delete ui;
+}
+
+void ModelSetting::on_buttonBox_accepted()
+{
+    if(ui->actionTable->rowCount()>0){
+        std::vector<std::string> codes;
+        for(int i=0,len=ui->actionTable->rowCount();i<len;++i){
+            codes.push_back(actionTableText(i).toStdString());
+        }
+        controller->setCellAction(codes);
+        controller->init();
+        mainWindow->reShowMap();
+    }else if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
+        controller->init();
+        mainWindow->reShowMap();
+    }
+}
+
+void ModelSetting::on_buttonBox_rejected()
+{
+    if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
+        controller->setCellNum({oldCellRowNum,oldCellColNum});
+    }
 }
 
 //绘图展示样例
@@ -97,14 +122,6 @@ void ModelSetting::on_cellColNum_valueChanged(int arg1)
     controller->setCellNum({ui->cellRowNum->value(),arg1});
 }
 
-void ModelSetting::on_buttonBox_accepted()
-{
-    if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
-        controller->init();
-        mainWindow->reShowMap();
-    }
-}
-
 //设置行为规则
 void ModelSetting::on_addActionButton_clicked()
 {
@@ -126,13 +143,6 @@ void ModelSetting::on_addActionButton_clicked()
     ui->actionTable->setItem(rowIndex,1,item1);
 }
 
-void ModelSetting::on_buttonBox_rejected()
-{
-    if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
-        controller->setCellNum({oldCellRowNum,oldCellColNum});
-    }
-}
-
 void ModelSetting::on_actionTable_cellClicked(int row, int column)
 {
     if(column==0){
@@ -141,7 +151,7 @@ void ModelSetting::on_actionTable_cellClicked(int row, int column)
         }else{
             CodeEditor *codeEditor=new CodeEditor(nullptr,this,controller,row);
             codeEditor->setAttribute(Qt::WA_DeleteOnClose);
-//            codeEditor->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
+            codeEditor->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
             while(codeEditorPtrs.size() <= row){
                 codeEditorPtrs.push_back(nullptr);
             }
@@ -176,7 +186,6 @@ void ModelSetting::setActionTableText(int row,QString text){
         on_addActionButton_clicked();
     }
     ui->actionTable->item(row,0)->setText(text);
-    controller->setCellAction(row,text.toStdString());
 }
 
 QString ModelSetting::actionTableText(int row){

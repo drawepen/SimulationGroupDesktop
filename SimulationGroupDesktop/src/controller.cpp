@@ -4,6 +4,7 @@
 #include "data/rule/sandaction.h"
 #include "data/rule/fireaction.h"
 #include "data/rule/isolationaction.h"
+#include "tool/ShellTool.h"
 #include <sys/time.h>
 
 int64_t currentTimeUs(){
@@ -15,14 +16,13 @@ int64_t currentTimeUs(){
 Controller::Controller()
 {
     model.setNeighborRule(model.relCoosF);
-//    model.addAction(new WlAction());//注意释放
-//    model.addAction(new VoteAction());//注意释放
-//    model.addAction(new SandAction());//注意释放
-//    model.addAction(new FireAction());//注意释放
-    model.addAction(new IsolationAction());//注意释放
-    randomState();
-//    initState();
-
+//    model.addAction(new WlAction());
+//    model.addAction(new VoteAction());
+    model.addAction(new SandAction());
+//    model.addAction(new FireAction());
+//    model.addAction(new IsolationAction());
+//    randomState();
+    initState();
 }
 
 bool Controller::start(){
@@ -41,37 +41,49 @@ void Controller::runOneFrame(){
     realTimeSpend=currentTimeUs()-startTime;
 }
 
-void Controller::randomState(){
+void Controller::initState(){
     for(Cell &cell:model.cells){
-//        cell.update(rand()%2==1?10:0,nowTime);
-        //谢林顿隔离模型
-        if(rand()%3==0){
-            cell.type=-1;
-        }else{
-            cell.type=1;
-            cell.update(rand()%2,nowTime);
+        int value=operationValue;
+        if(valueType==1){
+            value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
         }
+        cell.update(value,runTime);
     }
 }
 
-void Controller::initState(){
-    for(Cell &cell:model.cells){
-        cell.update(0,nowTime);
-    }
-}
 //点击操作不会生成新的帧，直接修改最后一帧
 void Controller::clickCell(int x,int y){
     if(nowTime<runTime){
-        return;         //回放暂时不支持修改
+        return;         //回放时不支持修改
     }
     Cell *cell=model.map.cells[y][x];
-//    if(cell->getState()==0){
-//        cell->update(10,cell->latestTime());
-//    }else{
-//        cell->update(cell->getState()-1,cell->latestTime());
-//    }
     //沙堆模型
-    cell->update(cell->getState()+1000000,cell->latestTime());
+    int value=operationValue;
+    if(valueType==1){
+        value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
+    }
+    if(operationType==0){
+        cell->update(value,nowTime);
+    }else if(operationType==1){
+        cell->update(cell->getState()+value,nowTime);
+    }
+}
+
+void Controller::allClick(){
+    if(nowTime<runTime){
+        return;         //回放时不支持修改
+    }
+    for(Cell &cell:model.cells){
+        int value=operationValue;
+        if(valueType==1){
+            value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
+        }
+        if(operationType==0){
+            cell.update(value,nowTime);
+        }else if(operationType==1){
+            cell.update(cell.getState()+value,nowTime);
+        }
+    }
 }
 
 int Controller::getState(int x,int y){
@@ -79,6 +91,7 @@ int Controller::getState(int x,int y){
 }
 
 void Controller::setModelNeighborRule(int type){
+    model.neighborRuleType=type;
     switch (type) {
     case 0:
         model.setNeighborRule(model.relCoosF);
@@ -91,8 +104,14 @@ void Controller::setModelNeighborRule(int type){
         break;
     }
 }
-
+ShellTool shellTool;
 //设置模型
-void Controller::setCellAction(int index,std::string code){
-
+void Controller::setCellAction(std::vector<std::string> codes){
+    model.clearAction();
+    for(auto code:codes){
+        Action *action=new Action();
+        shellTool.buildDll(code);
+        action->libExecute=shellTool.libExecute;
+        model.addAction(action);
+    }
 }
