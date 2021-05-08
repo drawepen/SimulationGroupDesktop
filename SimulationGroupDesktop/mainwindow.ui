@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>700</height>
+    <width>807</width>
+    <height>523</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -370,7 +370,7 @@
      <widget class="QFrame" name="mapShowFrame">
       <property name="minimumSize">
        <size>
-        <width>20</width>
+        <width>60</width>
         <height>0</height>
        </size>
       </property>
@@ -666,10 +666,33 @@
          </column>
          <column>
           <property name="text">
-           <string>操作</string>
+           <string>备注</string>
           </property>
          </column>
         </widget>
+        <widget class="QCheckBox" name="checkBox">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>10</y>
+           <width>51</width>
+           <height>18</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>只读</string>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="widget_8" native="true">
+        <property name="geometry">
+         <rect>
+          <x>9</x>
+          <y>259</y>
+          <width>221</width>
+          <height>281</height>
+         </rect>
+        </property>
        </widget>
       </widget>
      </widget>
@@ -926,7 +949,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>807</width>
      <height>21</height>
     </rect>
    </property>
@@ -957,11 +980,18 @@
      <string>设置</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menu_6">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="useDoc"/>
+   </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
    <addaction name="menu_3"/>
    <addaction name="menu_4"/>
    <addaction name="menu_5"/>
+   <addaction name="menu_6"/>
   </widget>
   <action name="modelset">
    <property name="text">
@@ -971,6 +1001,11 @@
   <action name="modelnew">
    <property name="text">
     <string>新建</string>
+   </property>
+  </action>
+  <action name="useDoc">
+   <property name="text">
+    <string>使用文档</string>
    </property>
   </action>
  </widget>

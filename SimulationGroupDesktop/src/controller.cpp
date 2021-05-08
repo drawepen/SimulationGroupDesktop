@@ -15,10 +15,10 @@ int64_t currentTimeUs(){
 
 Controller::Controller()
 {
-    model.setNeighborRule(model.relCoosF);
-//    model.addAction(new WlAction());
+    setModelNeighborRule(model.getNeighborRuleType());
+    model.addAction(new WlAction());
 //    model.addAction(new VoteAction());
-    model.addAction(new SandAction());
+//    model.addAction(new SandAction());
 //    model.addAction(new FireAction());
 //    model.addAction(new IsolationAction());
 //    randomState();
@@ -57,7 +57,6 @@ void Controller::clickCell(int x,int y){
         return;         //回放时不支持修改
     }
     Cell *cell=model.map.cells[y][x];
-    //沙堆模型
     int value=operationValue;
     if(valueType==1){
         value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
@@ -91,16 +90,15 @@ int Controller::getState(int x,int y){
 }
 
 void Controller::setModelNeighborRule(int type){
-    model.neighborRuleType=type;
     switch (type) {
     case 0:
-        model.setNeighborRule(model.relCoosF);
+        model.setNeighborRule(model.relCoosF,type);
         break;
     case 1:
-        model.setNeighborRule(model.relCoosM);
+        model.setNeighborRule(model.relCoosM,type);
         break;
     case 2:
-        model.setNeighborRule(model.relCoosME);
+        model.setNeighborRule(model.relCoosME,type);
         break;
     }
 }
@@ -108,10 +106,14 @@ ShellTool shellTool;
 //设置模型
 void Controller::setCellAction(std::vector<std::string> codes){
     model.clearAction();
+    std::vector<Action*> actions;
     for(auto code:codes){
         Action *action=new Action();
-        shellTool.buildDll(code);
-        action->libExecute=shellTool.libExecute;
+        action->libExecute=shellTool.buildDll(code);
+        actions.push_back(action);
+    }
+    for(Action *action:actions){
         model.addAction(action);
     }
+    model.setActionCodes(codes);
 }

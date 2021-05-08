@@ -11,6 +11,9 @@ public:
     Controller();
     //设置model
     void setCellAction(std::vector<std::string> codes);
+    std::vector<std::string>& getActionCodes(){
+       return model.getActionCodes();
+    }
     //执行流程
     bool start();
     bool suspend();         //暂停或继续
@@ -64,10 +67,17 @@ public:
 
     //模型参数设置
     std::vector<std::pair<int,int>>& getNowModelNeighborRule(){return model.getNeighborRule();}
-    int getModelNeighborRuleType(){return model.neighborRuleType;}
+    int getModelNeighborRuleType(){return model.getNeighborRuleType();}
     void setModelNeighborRule(int type);
     std::pair<int,int> getCellNum(){return model.getCellNum();}
-    void setCellNum(std::pair<int,int> num){model.setCellNum(num);}
+    void setCellNum(std::pair<int,int> num){
+        model.setCellNum(num);
+    }
+    void setState2Color(std::vector<StateColor> state2Color){
+        model.setState2Color(state2Color);
+    }
+    std::vector<StateColor>& getState2Color(){return model.getState2Color();}
+    StateColor getDefColor(){return model.getDefColor();}
 private:
     //模型
     Model model;

@@ -4,7 +4,7 @@
 #include "src/controller.h"
 #include <QMainWindow>
 #include <QTimer>
-//WARNING注意循环引用头文件
+//WARNING:注意循环引用头文件
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -47,6 +47,7 @@ private slots:
     void on_progressSlider_valueChanged(int arg1);
     void on_speedSlider_valueChanged(int arg1);
     void on_modelset_triggered();
+    void on_useDoc_triggered();
 
     void on_operationTypeCombo_activated(int index);
 
@@ -62,15 +63,15 @@ private slots:
 
     void on_curTypeButton1_clicked(bool checked);
 
-    void on_curTypeButton3_clicked(bool checked);
-
     void on_curTypeButton2_clicked(bool checked);
+
+    void on_curTypeButton3_clicked(bool checked);
 
     void on_curTypeButton4_clicked(bool checked);
 
 private:
     void updateProgress();
-    void pointEvent(QPoint &point);
+    void clickEvent(QPoint &point);
     void showState();
 };
 

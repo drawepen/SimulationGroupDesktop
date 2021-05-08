@@ -1,12 +1,13 @@
 #ifndef SHELLTOOL_H
 #define SHELLTOOL_H
 #include <string>
+#include <QLibrary>
 typedef int (* FUN)(int*,int,int);
 class ShellTool
 {
 public:
     ShellTool();
-    void buildDll(std::string code);
+    FUN buildDll(std::string code);
     FUN libExecute;
 private:
     char *shellBuildObj="cl /c %s /Fo\"%s.obj\"";
@@ -19,8 +20,7 @@ private:
                "LIBRARY         %s.dll\n"
                "EXPORTS\n"
                "                %s @1 PRIVATE";//文件前缀名 文件前缀名 方法名
-    char *templateCpp="#include \"ActionLib.h\"\n"
-    "%s\n";
+    char *templateCpp="#include \"ActionLib.h\"\n%s";
     char *templateCpp2="#include <iostream>\n"
                "#include <objbase.h>\n"
                "#define MYDLLTEST_API __declspec(dllexport)\n"
@@ -38,6 +38,8 @@ private:
     char *libPath="E:\\Workbench\\Projects\\GraduatedCourseDesign\\LibProjects\\\ActionLib";
     char *libFileName="ActionLib";
     char *libFunName="execute";
+
+    QLibrary *library;
 private:
     std::string build(std::string pathName);
     void runVsShell(char *shell);

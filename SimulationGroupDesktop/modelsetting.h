@@ -2,6 +2,8 @@
 #define MODELSETTING_H
 
 #include <QDialog>
+#include <QSpinBox>
+#include <QComboBox>
 #include "src/controller.h"
 #include "mainwindow.h"
 
@@ -37,10 +39,20 @@ private slots:
 
     void on_actionTable_cellClicked(int row, int column);
 
+    void on_stateMapTable_cellClicked(int row, int column);
+
+    void on_addStateMapButton_clicked();
+
 private:
     Ui::ModelSetting *ui;
     MainWindow *mainWindow;
     Controller *controller;
+
+    std::vector<QSpinBox*> stateMapSpinBoxs;
+    std::vector<QComboBox*> stateMapComboBoxs;
+    std::vector<int> codeEditCounts;
+
+    int cellColNum,cellRowNum;
 };
 
 #endif // MODELSETTING_H

@@ -18,8 +18,8 @@ public:
 private:
     int width=16; //元胞大小
     int height=16;
-    int colNum=20; //元胞个数
-    int rowNum=20;
+    int colNum=30; //元胞个数
+    int rowNum=30;
 };
 
 #endif // MAP_H

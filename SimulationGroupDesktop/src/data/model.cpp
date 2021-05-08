@@ -6,6 +6,9 @@ Model::Model()
 {
     srand(time(NULL));
     updateCellAndMap();
+    defColor=StateColor(0,0,255,255,255,0);
+    state2Color.push_back(defColor);
+    state2Color.push_back(StateColor(1,INT32_MAX,0,0,0,0));//TODO删除
 }
 void Model::updateCellAndMap(){
     int cellId=0;
@@ -48,11 +51,13 @@ void Model::update(int nowTime){
     }
 }
 
-void Model::setNeighborRule(std::vector<std::pair<int,int>> &relCoos)
+void Model::setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type)
 {
+    this->neighborRuleType=type;
     this->relCoos=relCoos;
     updateNeighbor();
 }
+
 void Model::updateNeighbor(){
     for(int y=0,hLen=map.getRowNum();y<hLen;++y){
         for(int x=0,wLen=map.getColNum();x<wLen;++x){

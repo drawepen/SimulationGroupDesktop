@@ -4,8 +4,8 @@
 #include <QPainter>
 #include <QAbstractItemView>
 #include <QMessageBox>
+#include <QColorDialog>
 
-int oldCellRowNum,oldCellColNum;
 ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
     QDialog(parent),
     ui(new Ui::ModelSetting)
@@ -15,42 +15,67 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
     this->controller= &mainWindow->controller;
     ui->cellRowNum->setValue(controller->getCellRowNum());
     ui->cellColNum->setValue(controller->getCellColNum());
-    oldCellRowNum=controller->getCellRowNum();
-    oldCellColNum=controller->getCellColNum();
-    //设置
-    ui->actionTable->setColumnWidth(0,240);
-    ui->actionTable->setColumnWidth(1,50);
+    cellRowNum=controller->getCellRowNum();
+    cellColNum=controller->getCellColNum();
+    //元胞行为规则
     ui->actionTable->verticalHeader()->setMinimumWidth(20);
+    ui->actionTable->setColumnWidth(0,240);
+    ui->actionTable->setColumnWidth(1,ui->actionTable->width()-260-2);
+    std::vector<std::string> &codes=controller->getActionCodes();
+    for(std::string code:codes){
+        on_addActionButton_clicked();
+        setActionTableText(ui->actionTable->rowCount()-1,QString(code.c_str()));
+    }
+    //元胞交互规则
     ui->comboBox->setCurrentIndex(controller->getModelNeighborRuleType());
+
+    //状态颜色映射
+    ui->stateMapTable->verticalHeader()->setMinimumWidth(20);
+    ui->stateMapTable->setColumnWidth(0,120);
+    ui->stateMapTable->setColumnWidth(1,100);
+    ui->stateMapTable->setColumnWidth(2,30);
+    ui->stateMapTable->setColumnWidth(3,ui->stateMapTable->width()-270-2);
+    ui->stateMapTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    std::vector<StateColor> &stateColors = controller->getState2Color();
+    if(stateColors.size()>0){
+        ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
+                                         ui->addStateMapButton->width(),ui->addStateMapButton->height());
+        ui->stateMapTable->insertRow(0);
+        QTableWidgetItem *item0=new QTableWidgetItem("默认");
+        item0->setTextAlignment(Qt::AlignCenter);
+        ui->stateMapTable->setItem(0,0,item0);
+        QStringList stringList;
+        stringList.append(tr("纯色"));//tr()翻译
+        stringList.append(tr("斜线"));
+        QComboBox *combobox=new QComboBox();
+        combobox->addItems(stringList);
+        ui->stateMapTable->setCellWidget(0,1,combobox);
+        stateMapComboBoxs.push_back(combobox);
+        ui->stateMapTable->setItem(0,2,new QTableWidgetItem());
+        QTableWidgetItem *item1=new QTableWidgetItem("删除");
+        item1->setTextAlignment(Qt::AlignCenter);
+        item1->setBackgroundColor(Qt::gray);
+        ui->stateMapTable->setItem(0,3,item1);
+
+        stateMapComboBoxs[0]->setCurrentIndex(stateColors[0].type);
+        ui->stateMapTable->item(0,2)->setBackgroundColor(QColor(stateColors[0].r,stateColors[0].g,stateColors[0].b));
+    }
+    for(int i=1;i<stateColors.size();++i){
+        on_addStateMapButton_clicked();
+        stateMapSpinBoxs[i*2-2]->setValue(stateColors[i].from);
+        stateMapSpinBoxs[i*2-1]->setValue(stateColors[i].to);
+        stateMapComboBoxs[i]->setCurrentIndex(stateColors[i].type);
+//        stateMapComboBoxs[i]->activated(stateColors[i].type);
+        ui->stateMapTable->item(i,2)->setBackgroundColor(QColor(stateColors[i].r,stateColors[i].g,stateColors[i].b));
+    }
+
     update();
 }
 
 ModelSetting::~ModelSetting()
 {
     delete ui;
-}
-
-void ModelSetting::on_buttonBox_accepted()
-{
-    if(ui->actionTable->rowCount()>0){
-        std::vector<std::string> codes;
-        for(int i=0,len=ui->actionTable->rowCount();i<len;++i){
-            codes.push_back(actionTableText(i).toStdString());
-        }
-        controller->setCellAction(codes);
-        controller->init();
-        mainWindow->reShowMap();
-    }else if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
-        controller->init();
-        mainWindow->reShowMap();
-    }
-}
-
-void ModelSetting::on_buttonBox_rejected()
-{
-    if(controller->getCellColNum()!=oldCellColNum || controller->getCellRowNum()!=oldCellRowNum){
-        controller->setCellNum({oldCellRowNum,oldCellColNum});
-    }
 }
 
 //绘图展示样例
@@ -114,12 +139,12 @@ void ModelSetting::on_comboBox_activated(int index)
 
 void ModelSetting::on_cellRowNum_valueChanged(int arg1)
 {
-    controller->setCellNum({arg1,ui->cellColNum->value()});
+    cellRowNum=arg1;
 }
 
 void ModelSetting::on_cellColNum_valueChanged(int arg1)
 {
-    controller->setCellNum({ui->cellRowNum->value(),arg1});
+    cellColNum=arg1;
 }
 
 //设置行为规则
@@ -175,6 +200,15 @@ void ModelSetting::on_actionTable_cellClicked(int row, int column)
                     codeEditorPtrs[i]=nullptr;
                 }
             }
+            if(codeEditCounts.size()>row){
+                codeEditCounts[row]=0;
+            }
+            for(int i=row+1;i<codeEditCounts.size();++i){
+                codeEditCounts[i-1]=codeEditCounts[i];
+            }
+            if(codeEditCounts.size()>ui->actionTable->rowCount()){
+                codeEditCounts.resize(ui->actionTable->rowCount());
+            }
         }
         //TODO
     }
@@ -185,9 +219,109 @@ void ModelSetting::setActionTableText(int row,QString text){
         row=ui->actionTable->rowCount();
         on_addActionButton_clicked();
     }
+    while (codeEditCounts.size() <= row) {
+        codeEditCounts.push_back(0);
+    }
+    codeEditCounts[row]=1;
     ui->actionTable->item(row,0)->setText(text);
 }
 
 QString ModelSetting::actionTableText(int row){
+    if(codeEditCounts.size() <= row || codeEditCounts[row]==0){
+        return "";
+    }
     return ui->actionTable->item(row,0)->text();
+}
+
+void ModelSetting::on_addStateMapButton_clicked()
+{
+    ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
+                                     ui->addStateMapButton->width(),ui->addStateMapButton->height());
+    int row=ui->stateMapTable->rowCount();
+    ui->stateMapTable->insertRow(row);
+    QWidget *widget=new QWidget();
+    QHBoxLayout *layout=new QHBoxLayout();
+    layout->setMargin(0);
+    widget->setLayout(layout);
+    QSpinBox *spin1=new QSpinBox(),*spin2=new QSpinBox();
+    spin1->setMinimum(INT32_MIN);spin1->setMaximum(INT32_MAX);
+    spin2->setMinimum(INT32_MIN);spin2->setMaximum(INT32_MAX);
+    layout->addWidget(spin1);
+    layout->addWidget(new QLabel("～"));
+    layout->addWidget(spin2);
+    stateMapSpinBoxs.push_back(spin1);
+    stateMapSpinBoxs.push_back(spin2);
+    ui->stateMapTable->setCellWidget(row,0,widget);
+
+    QStringList stringList;
+    stringList.append(tr("纯色"));//tr()翻译
+    stringList.append(tr("斜线"));
+    QComboBox *combobox=new QComboBox();
+    combobox->addItems(stringList);
+    ui->stateMapTable->setCellWidget(row,1,combobox);
+    stateMapComboBoxs.push_back(combobox);
+
+    ui->stateMapTable->setItem(row,2,new QTableWidgetItem());
+    QTableWidgetItem *item1=new QTableWidgetItem("删除");
+    item1->setTextAlignment(Qt::AlignCenter);
+    item1->setTextColor(Qt::red);
+    ui->stateMapTable->setItem(row,3,item1);
+}
+
+void ModelSetting::on_stateMapTable_cellClicked(int row, int column)
+{
+    if(column==2){
+        QColorDialog colorD;//调出颜色选择器对话框
+        ui->stateMapTable->item(row,2)->setBackgroundColor(colorD.getRgba());
+        //TODO选中时颜色设置
+    }else if(column==3){
+        if(row<=0){
+            QMessageBox::question(this, "提示", "默认映射不可删除", QMessageBox::Ok);
+            return;
+        }
+        QMessageBox::StandardButton btn = QMessageBox::question(this, "提示", "确定要删除吗?", QMessageBox::Yes|QMessageBox::No);
+        if (btn == QMessageBox::Yes) {
+            ui->stateMapTable->removeRow(row);
+            ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()-30,
+                                             ui->addStateMapButton->width(),ui->addStateMapButton->height());
+        }
+    }
+}
+
+//确认或取消
+void ModelSetting::on_buttonBox_accepted()
+{
+    bool change=false;
+    if(ui->actionTable->rowCount()>0){//TODO正确的判断是否修改
+        std::vector<std::string> codes;
+        for(int i=0,len=ui->actionTable->rowCount();i<len;++i){
+            codes.push_back(actionTableText(i).toStdString());
+        }
+        controller->setCellAction(codes);
+    }
+    if(controller->getCellColNum()!=cellColNum || controller->getCellRowNum()!=cellRowNum){
+        controller->setCellNum({cellRowNum,cellColNum});
+        change=true;
+    }
+
+    //元胞映射设置
+    std::vector<StateColor> state2Color;
+    QColor color=ui->stateMapTable->item(0,2)->backgroundColor();
+    state2Color.push_back(StateColor(INT32_MIN,INT32_MAX,color.red(),color.green(),color.blue(),stateMapComboBoxs[0]->currentIndex()));
+    for(int i=1;i<ui->stateMapTable->rowCount();++i){
+        color=ui->stateMapTable->item(i,2)->backgroundColor();
+        state2Color.push_back(StateColor(stateMapSpinBoxs[i*2-2]->value(),stateMapSpinBoxs[i*2-1]->value(),
+                color.red(),color.green(),color.blue(),stateMapComboBoxs[i]->currentIndex()));
+    }
+    controller->setState2Color(state2Color);
+
+    if(change){
+        controller->init();
+        mainWindow->reShowMap();
+    }
+}
+
+void ModelSetting::on_buttonBox_rejected()
+{
+
 }

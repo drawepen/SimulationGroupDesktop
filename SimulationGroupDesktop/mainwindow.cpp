@@ -6,8 +6,9 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <QPixmap>
+#include <QtCharts>
 #include "src/data/model.h" //???引用头文件报错找不到方法[已解决：makefile文件中被引用的文件要在前声明]
-
+//using namespace QtCharts;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -44,8 +45,13 @@ MainWindow::MainWindow(QWidget *parent)
     icon4.addFile(tr(":/image/cur/resources/cur_enlarge.ico"));
     ui->curTypeButton4->setIcon(icon4);
     ui->curTypeButton4->setIconSize(QSize(26,26));
-
     ui->curTypeButton1->setChecked(true);
+
+    ui->stateTable->verticalHeader()->setMinimumWidth(16);
+    ui->stateTable->setColumnWidth(0,120);
+    ui->stateTable->setColumnWidth(1,ui->stateTable->width()-136-2);
+
+
 }
 
 MainWindow::~MainWindow()
@@ -53,13 +59,14 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+//鼠标事件
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     QPoint point=event->pos();
     if(event->button()==Qt::LeftButton)
     {
         QPoint point1=point - ui->centralwidget->pos()- ui->mapShowFrame->pos();
-        pointEvent(point1);
+        clickEvent(point1);
         //窗口缩放
         winZoomType=0;
         switch (1) {
@@ -84,7 +91,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     QPoint point=event->pos() - ui->centralwidget->pos() -ui->mapShowFrame->pos();
     if(event->buttons() & Qt::LeftButton)
     {
-        pointEvent(point);
+        clickEvent(point);
         //窗口缩放
         switch (winZoomType) {
         case 1:{
@@ -106,6 +113,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     cellWidth=ui->mapShowFrame->width()/controller.getCellColNum();
     cellHeight=ui->mapShowFrame->height()/controller.getCellRowNum();
     cellWidth=cellHeight=min(cellWidth,cellHeight);
+    if(cellWidth==0){
+        return;
+    }
     int cellX=x/cellWidth;
     int cellY=y/cellHeight;
     if(x>=0 && cellX<controller.getCellColNum() && cellX!=this->cellX)
@@ -116,6 +126,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     {
         ui->cellYSpin->setValue(cellY);
     }
+    update();//TODO去除重复update
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event){
@@ -130,53 +141,85 @@ void MainWindow::timerUpdate()
 }
 
 //绘图
-void MainWindow::paintEvent(QPaintEvent *)
+void MainWindow::paintEvent(QPaintEvent *qPaintEvent)
 {
-    int cellWidthNum,cellHeightNum,cellWidth,cellHeight;
-    cellWidthNum=controller.getCellColNum();
-    cellHeightNum=controller.getCellRowNum();
-    cellWidth=ui->mapShowFrame->width()/cellWidthNum;
-    cellHeight=ui->mapShowFrame->height()/cellHeightNum;
+    int cellColNum,cellRowNum,cellWidth,cellHeight;
+    cellColNum=controller.getCellColNum();
+    cellRowNum=controller.getCellRowNum();
+    cellWidth=ui->mapShowFrame->width()/cellColNum;
+    cellHeight=ui->mapShowFrame->height()/cellRowNum;
     cellWidth=cellHeight=min(cellWidth,cellHeight);
 
     QPainter painter(this);
-
-    //设置网格颜色
-    QPen pen(Qt::gray);
-    painter.setPen(pen);
-
     //以label左上角为原点
     painter.translate(ui->centralwidget->x()+ui->mapShowFrame->x(),
                       ui->centralwidget->y()+ui->mapShowFrame->y());
-
+    //设置网格颜色
+    painter.setPen(QPen(Qt::gray));
     //清空画布
     QBrush brush(Qt::white,Qt::SolidPattern);
     painter.setBrush(brush);
     painter.drawRect(0,0,ui->mapShowFrame->width()-1,ui->mapShowFrame->height()-1);
 
-    //绘制网格
-    for(int x=0;x<=cellWidthNum;x++)
-    {
-        painter.drawLine(x*cellWidth,0,x*cellWidth,cellHeightNum*cellHeight);
-    }
-    for(int y=0;y<=cellHeightNum;y++)
-    {
-        painter.drawLine(0,y*cellHeight,cellWidthNum*cellWidth,y*cellHeight);
-    }
-
     //绘制细胞
-    brush.setColor(Qt::black);
+    std::vector<StateColor>& state2Color=controller.getState2Color();
+
+    brush.setColor(QColor(state2Color[0].r,state2Color[0].g,state2Color[0].b));
     painter.setBrush(brush);
-    for(int y=0;y<cellHeightNum;y++)
+    painter.drawRect(0,0,cellColNum*cellWidth,cellRowNum*cellHeight);
+    for(int y=0;y<cellRowNum;y++)
     {
-        for(int x=0;x<cellWidthNum;x++)
+        for(int x=0;x<cellColNum;x++)
         {
-            if(controller.getState(x,y)>0){
-                painter.drawRect(x*cellWidth,y*cellHeight,cellWidth,cellHeight);
+            int state=controller.getState(x,y);
+            for(int i=state2Color.size()-1;i>0;--i){//TODO 待优化，减少颜色修改和内层循环(影响不大)、画矩形个数(影响大)、矩阵大小(影响也大)
+                if(state>=state2Color[i].from && state<=state2Color[i].to){
+                    brush.setColor(QColor(state2Color[i].r,state2Color[i].g,state2Color[i].b));
+                    painter.setBrush(brush);
+                    painter.drawRect(x*cellWidth,y*cellHeight,cellWidth,cellHeight);
+                    break;
+                }
             }
         }
     }
 
+    //绘制网格
+    for(int x=0;x<=cellColNum;x++)
+    {
+        painter.drawLine(x*cellWidth,0,x*cellWidth,cellRowNum*cellHeight);
+    }
+    for(int y=0;y<=cellRowNum;y++)
+    {
+        painter.drawLine(0,y*cellHeight,cellColNum*cellWidth,y*cellHeight);
+    }
+
+    //特效
+    QPoint point=ui->mapShowFrame->mapFromGlobal(QCursor().pos());
+    int cellX=point.x()/cellWidth;
+    int cellY=point.y()/cellHeight;
+    if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum){
+        int mX=cellX*cellWidth,mY=cellY*cellHeight;
+        //绘制元胞边界
+        painter.setBrush(QBrush());
+        if(curType==2){
+            painter.setPen(QPen(Qt::red, 2));
+            int w=cellWidth,h=cellHeight,x=mX,y=mY;
+            if(w>0 && w<4 && h>0 && h <4){
+                x-=(4-w)/2;
+                y-=(4-h)/2;
+                w=h=4;
+            }
+            painter.drawRect(x,y,w,h);
+            painter.setPen(QPen(Qt::white, 1));
+            painter.drawRect(x+1,y+1,w-2,h-2);
+            painter.drawRect(x-2,y-2,w+3,h+3);
+        }else if(curType==3){
+            painter.setPen(QPen(Qt::red, 4));
+            painter.drawRect(0,0,cellColNum*cellWidth,cellColNum*cellHeight);
+            painter.setPen(QPen(Qt::white, 1));
+            painter.drawRect(3,3,cellColNum*cellWidth-6,cellColNum*cellHeight-6);
+        }
+    }
     painter.end();
 }
 
@@ -245,6 +288,11 @@ void MainWindow::on_modelset_triggered()
 
 }
 
+void MainWindow::on_useDoc_triggered()
+{
+    //...
+}
+
 void MainWindow::reShowMap()
 {
     ui->nowTimeLabel->setText(QString::number(controller.getNowTime(),10));
@@ -252,23 +300,23 @@ void MainWindow::reShowMap()
     ui->progressSlider->setValue(controller.getNowTime());
 }
 //操作
-void MainWindow::pointEvent(QPoint &point)
+void MainWindow::clickEvent(QPoint &point)
 {
     if(winZoomType!=0){
         return;
     }
-    int cellWidthNum,cellHeightNum,cellWidth,cellHeight;
-    cellWidthNum=controller.getCellColNum();
-    cellHeightNum=controller.getCellRowNum();
-    cellWidth=ui->mapShowFrame->width()/cellWidthNum;
-    cellHeight=ui->mapShowFrame->height()/cellHeightNum;
+    int cellColNum,cellRowNum,cellWidth,cellHeight;
+    cellColNum=controller.getCellColNum();
+    cellRowNum=controller.getCellRowNum();
+    cellWidth=ui->mapShowFrame->width()/cellColNum;
+    cellHeight=ui->mapShowFrame->height()/cellRowNum;
     cellWidth=cellHeight=min(cellWidth,cellHeight);
 
     int x=point.x();
     int y=point.y();
     int cellX=x/cellWidth;
     int cellY=y/cellHeight;
-    if(x>=0 && cellX<cellWidthNum && y>=0 && cellY<cellHeightNum)
+    if(x>=0 && cellX<cellColNum && y>=0 && cellY<cellRowNum)
     {
         if(curType==2){
             controller.clickCell(cellX,cellY);
@@ -361,6 +409,7 @@ void MainWindow::on_curTypeButton2_clicked(bool checked)
         ui->curTypeButton3->setChecked(false);
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::PointingHandCursor);
+//        ui->mapShowFrame->setCursor(QCursor(QPixmap(":/image/cur/resources/cur_set.ico"),-1,-1));
     }
 }
 
@@ -371,7 +420,7 @@ void MainWindow::on_curTypeButton3_clicked(bool checked)
         ui->curTypeButton1->setChecked(false);
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton4->setChecked(false);
-        ui->mapShowFrame->setCursor(Qt::SizeAllCursor);
+        ui->mapShowFrame->setCursor(Qt::OpenHandCursor);
     }
 }
 
