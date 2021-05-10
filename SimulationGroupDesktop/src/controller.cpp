@@ -16,12 +16,26 @@ int64_t currentTimeUs(){
 Controller::Controller()
 {
     setModelNeighborRule(model.getNeighborRuleType());
-    model.addAction(new WlAction());
+//    model.addAction(new WlAction());
 //    model.addAction(new VoteAction());
-//    model.addAction(new SandAction());
+    model.addAction(new SandAction());
 //    model.addAction(new FireAction());
 //    model.addAction(new IsolationAction());
 //    randomState();
+    init();
+}
+
+void Controller::init(){
+    srand(time(NULL));
+    nowTime=runTime=0;
+    model.init();
+    updateCellAndMap();
+    realTimeSpend.clear();
+    realTimeSpend.push_back(0);
+}
+
+void Controller::updateCellAndMap(){
+    model.updateCellAndMap();
     initState();
 }
 
@@ -38,7 +52,7 @@ void Controller::runOneFrame(){
     model.update(runTime+1);
     ++runTime;
     nowTime=runTime;
-    realTimeSpend=currentTimeUs()-startTime;
+    realTimeSpend.push_back(currentTimeUs()-startTime);
 }
 
 void Controller::initState(){
@@ -49,6 +63,7 @@ void Controller::initState(){
         }
         cell.update(value,runTime);
     }
+    model.statistics(runTime);
 }
 
 //点击操作不会生成新的帧，直接修改最后一帧
@@ -66,11 +81,12 @@ void Controller::clickCell(int x,int y){
     }else if(operationType==1){
         cell->update(cell->getState()+value,nowTime);
     }
+    model.statistics(nowTime);
 }
 
 void Controller::allClick(){
     if(nowTime<runTime){
-        return;         //回放时不支持修改
+        return;//回放时不支持修改
     }
     for(Cell &cell:model.cells){
         int value=operationValue;
@@ -83,13 +99,15 @@ void Controller::allClick(){
             cell.update(cell.getState()+value,nowTime);
         }
     }
+    model.statistics(nowTime);
 }
 
 int Controller::getState(int x,int y){
     return model.getState(x,y,nowTime);
 }
-
-void Controller::setModelNeighborRule(int type){
+//元胞邻居规则
+void Controller::setModelNeighborRule(int type)
+{
     switch (type) {
     case 0:
         model.setNeighborRule(model.relCoosF,type);
@@ -100,9 +118,26 @@ void Controller::setModelNeighborRule(int type){
     case 2:
         model.setNeighborRule(model.relCoosME,type);
         break;
+    case 3:
+        model.setNeighborRule(tempNeighborRule,type);
+        break;
     }
 }
-ShellTool shellTool;
+void Controller::clickNeighbor(int xSub,int ySub)
+{
+    bool change=false;
+    for(auto iter=tempNeighborRule.begin();iter!=tempNeighborRule.end();++iter){
+        if(iter->first==xSub && iter->second==ySub){
+            tempNeighborRule.erase(iter);
+            change=true;
+            break;
+        }
+    }
+    if(!change){
+        tempNeighborRule.emplace_back(xSub,ySub);
+    }
+}
+
 //设置模型
 void Controller::setCellAction(std::vector<std::string> codes){
     model.clearAction();

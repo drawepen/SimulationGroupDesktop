@@ -6,11 +6,17 @@ class Cell
 {
 public:
     Cell();
-    int getState(){ return type!=-1?*states.rbegin():-1; }
-    int getState(int time){ return time<states.size()?states[time]:-1; }
     void update(int state);
     void update(int state,int time);
-    int latestTime(){return states.size()-1;}
+    int getState(){
+        return type!=-1?*states.rbegin():-1;
+    }
+    int getState(int time){
+        return time<states.size()?states[time]:-1;
+    }
+    int latestTime(){
+        return states.size()-1;
+    }
 public:
     std::vector<Cell*> neighbors;
     int mapX,mapY;          //在地图中的坐标

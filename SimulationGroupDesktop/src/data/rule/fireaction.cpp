@@ -7,25 +7,20 @@ FireAction::FireAction()
 }
 
 void FireAction::execute(Cell &cell,int nowTime){
-    int state=cell.getState();
-    int newState=0;
-    switch (state)
-    {
-    case 0:
-        //newState=rand()%100==0?10:0;
-        break;
-    case 10:
-    {
-        int count=0;
+    //-100000着火;<=0空地;>0树木
+    int lastTime=nowTime-1;
+    int state=cell.getState(lastTime);
+    int newState=state;
+    if(state>0){
+        newState=1;
         for(Cell *nc:cell.neighbors){
-            if(nc->getState()==1){
-                ++count;
+            if(nc->getState(lastTime)==-100000){
+                newState=-100000;
+                break;
             }
         }
-        newState=count>0?9:10;
-        break;
+    }else if(state<=0 && state!=-100000){
+        newState=0;
     }
-    default:newState=state-1;
-    }
-    cell.update(newState);
+    cell.update(newState,nowTime);
 }

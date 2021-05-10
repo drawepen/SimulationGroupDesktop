@@ -2,6 +2,7 @@ debug/mainwindow.o
 debug/CodeEditor.o
 debug/main.o
 debug/modelsetting.o
+debug/showframe.o
 debug/showview.o
 debug/action.o
 debug/cell.o

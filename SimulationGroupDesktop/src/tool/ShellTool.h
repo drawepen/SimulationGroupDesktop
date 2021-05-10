@@ -8,8 +8,9 @@ class ShellTool
 public:
     ShellTool();
     FUN buildDll(std::string code);
-    FUN libExecute;
+    void setRootPath(char *path);
 private:
+    std::string rootPath;
     char *shellBuildObj="cl /c %s /Fo\"%s.obj\"";
     char *shellBuildDll="Link /dll %s.obj /def:%s.def";
     char *defaultFileName="code";
@@ -35,12 +36,13 @@ private:
                "\t}\n"
                "\treturn true;\n"
                "}";//%s "MYDLLTEST_API void FuncInDll(void);\n"
-    char *libPath="E:\\Workbench\\Projects\\GraduatedCourseDesign\\LibProjects\\\ActionLib";
     char *libFileName="ActionLib";
     char *libFunName="execute";
 
-    QLibrary *library;
+    QLibrary *library=nullptr;
 private:
+    void check();
+    std::string buildDll2(std::string code,std::string pathName,std::string funName);
     std::string build(std::string pathName);
     void runVsShell(char *shell);
 };

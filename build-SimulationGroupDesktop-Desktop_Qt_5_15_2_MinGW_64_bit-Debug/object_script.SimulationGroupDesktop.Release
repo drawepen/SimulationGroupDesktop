@@ -2,6 +2,7 @@ release/mainwindow.o
 release/CodeEditor.o
 release/main.o
 release/modelsetting.o
+release/showframe.o
 release/showview.o
 release/action.o
 release/cell.o

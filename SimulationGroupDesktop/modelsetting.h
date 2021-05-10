@@ -21,6 +21,9 @@ public:
     void paintEvent(QPaintEvent *event);
     void setActionTableText(int row,QString text);
     QString actionTableText(int row);
+protected:
+    void mouseDoubleClickEvent(QMouseEvent *e);//鼠标双击事件
+    void mouseMoveEvent(QMouseEvent *event);
 public:
     vector<int *> codeEditorPtrs;
 
@@ -43,6 +46,8 @@ private slots:
 
     void on_addStateMapButton_clicked();
 
+    void on_toolBox_currentChanged(int index);
+
 private:
     Ui::ModelSetting *ui;
     MainWindow *mainWindow;
@@ -53,6 +58,7 @@ private:
     std::vector<int> codeEditCounts;
 
     int cellColNum,cellRowNum;
+    int toolCurrentIndex=0;
 };
 
 #endif // MODELSETTING_H

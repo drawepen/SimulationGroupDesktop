@@ -6,15 +6,16 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <QPixmap>
-#include <QtCharts>
 #include "src/data/model.h" //???引用头文件报错找不到方法[已解决：makefile文件中被引用的文件要在前声明]
 //using namespace QtCharts;
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(char *path,QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    controller.setRootPath(path);
     ui->setupUi(this);
+    ui->mapShowFrame->setController(&controller);
     setMouseTracking(true);  //激活鼠标追踪
     ui->centralwidget->setMouseTracking(true);
     ui->mapShowFrame->setMouseTracking(true);
@@ -48,10 +49,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->curTypeButton1->setChecked(true);
 
     ui->stateTable->verticalHeader()->setMinimumWidth(16);
-    ui->stateTable->setColumnWidth(0,120);
-    ui->stateTable->setColumnWidth(1,ui->stateTable->width()-136-2);
+    ui->stateTable->setColumnWidth(0,80);
+    ui->stateTable->setColumnWidth(1,ui->stateTable->width()-96-2);
 
+    QIcon icon;
+    icon.addFile(tr(":/image/button/resources/reset.png"));
+    ui->resetButton->setIcon(icon);
+    ui->resetButton->setIconSize(ui->resetButton->size()-QSize(4,4));
 
+    initChart();
+    updateChart();
 }
 
 MainWindow::~MainWindow()
@@ -59,6 +66,149 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::initChart(){
+    //WARNING释放旧控件的内存会报错,可能重新设置会自动释放内存，暂时不释放，待解决
+    allStateSeries.clear();
+    maxStatistic=INT32_MIN;
+    specialEffType=0;
+
+    allStateChart=new QChart();
+    allStateChart->setAnimationOptions(QChart::AllAnimations);//设置动画
+    allStateChart->layout()->setContentsMargins(0, 0, 0, 0);//设置外边界
+    allStateChart->setMargins(QMargins(0, 0, 0, 0));//设置内边界
+    allStateChart->setBackgroundRoundness(4);//设置背景区域圆角
+
+    allStateAxisX=new QValueAxis();
+    allStateAxisX->setRange(0,60);
+    allStateAxisX->setGridLineVisible(true);
+    allStateAxisX->setTickCount(6+1);     //标记的个数
+    allStateAxisX->setMinorTickCount(4); //次标记的个数
+
+    allStateAxisY=new QValueAxis();
+    allStateAxisY->setRange(0,0);
+    allStateAxisY->setGridLineVisible(true);
+    allStateAxisY->setTickCount(5+1);
+    allStateAxisY->setMinorTickCount(4);
+
+    allStateAxisY2=new QValueAxis();
+    allStateAxisY2->setRange(0,1);
+    allStateAxisY2->setGridLineVisible(true);
+    allStateAxisY2->setTickCount(5+1);
+    allStateAxisY2->setMinorTickCount(4);
+
+    allStateChart->addAxis(allStateAxisX, Qt::AlignBottom);
+    allStateChart->addAxis(allStateAxisY, Qt::AlignLeft);
+    allStateChart->addAxis(allStateAxisY2,Qt::AlignRight);
+
+    allStateChart->legend()->hide();
+
+    ui->graphicsView->setChart(allStateChart);
+    ui->graphicsView->setRenderHint(QPainter::Antialiasing);
+
+    //饼状图
+    nowStateChart = new QChart();
+    nowStateSeries = new QPieSeries();
+
+    nowStateChart->legend()->hide();//是否显示图例
+    nowStateChart->addSeries(nowStateSeries);
+    nowStateChart->setAnimationOptions(QChart::AllAnimations);//设置动画
+//    nowStateChart->createDefaultAxes();
+    nowStateChart->layout()->setContentsMargins(0, 0, 0, 0);//设置外边界
+    nowStateChart->setMargins(QMargins(0, 0, 0, 0));//设置内边界
+    nowStateChart->setBackgroundRoundness(4);//设置背景区域圆角
+
+    ui->graphicsView_3->setChart(nowStateChart);
+    ui->graphicsView_3->setRenderHint(QPainter::Antialiasing);//抗锯齿处理
+}
+
+void MainWindow::updateChart(){
+    //TODO添加是否显示，仅添加点，不显示
+//    if(ui->graphicsView->isVisible())
+    if(specialEffType==0){
+        specialEffType=1;
+    }else if(specialEffType==1){
+        allStateChart->setAnimationOptions(QChart::NoAnimation);
+        nowStateChart->setAnimationOptions(QChart::NoAnimation);
+        specialEffType=2;
+    }
+    //当前状态
+    nowStateSeries->clear();
+    std::vector<std::pair<int,int>> &statistics=controller.getStatistics();
+    int sum=0,maxS=INT32_MIN;
+    for(std::pair<int,int> statistic:statistics) sum+=statistic.second;
+    QList<QPieSlice *> slices;
+    for(std::pair<int,int> statistic:statistics){
+        QPieSlice *slice=new QPieSlice(QString::number(statistic.first)+":"+QString::number(statistic.second)+
+                                       ","+QString::number(statistic.second*100.0/sum,'f',1)+"%",statistic.second);
+        QColor color=QColor(rand()%256,rand()%256,rand()%256);
+        slice->setColor(color);
+        QFont font=slice->labelFont();
+        font.setPointSize(8);
+        slice->setLabelFont(font);
+        slices.append(slice);
+        maxS=std::max(maxS,statistic.second);
+    }
+    nowStateSeries->append(slices);
+    nowStateSeries->setLabelsVisible();
+    nowStateChart->update();
+    //全状态
+
+    if(controller.getNowTime()==controller.getRunTime()){
+        bool deleteMaxS=false;
+        for(std::pair<int,int> statistic:statistics){
+            QLineSeries *series;
+            auto iter=allStateSeries.find(statistic.first);
+            if(iter!=allStateSeries.end()){
+                series=iter->second;
+            }else{
+                series=new QLineSeries();
+                series->setName(QString::number(statistic.first));
+                allStateChart->addSeries(series);
+
+                allStateChart->setAxisX(allStateAxisX,series);
+                allStateChart->setAxisY(allStateAxisY,series);
+                allStateSeries.insert(std::pair<int,QLineSeries*>(statistic.first,series));
+            }
+            int vX=controller.getRunTime();
+            if(series->count()==0 || series->at(series->count()-1).x()!=vX){
+                series->append(vX,statistic.second);
+            }else{
+                if(series->at(series->count()-1).y()==maxStatistic){
+                    deleteMaxS=true;
+                }
+                series->replace(series->count()-1,QPointF(vX,statistic.second));
+            }
+        }
+        if(maxS>maxStatistic){
+            allStateChart->axisY()->setRange(0,maxS);
+            if(maxS<=sum){
+                allStateAxisY2->setRange(0,maxS*100.0/sum);
+            }
+            maxStatistic=maxS;
+        }else if(deleteMaxS){
+            int maxV=INT32_MIN;
+            for(auto iter:allStateSeries){
+                QLineSeries *series=iter.second;
+                for(QPointF point:series->pointsVector()){
+                    if(point.y()>maxV){
+                        maxV=point.y();
+                    }
+                }
+            }
+            allStateChart->axisY()->setRange(0,maxV);
+            if(maxV<=sum){
+                allStateAxisY2->setRange(0,maxV*100.0/sum);
+            }
+            maxStatistic=maxV;
+        }
+    }
+    if(controller.getNowTime()>60){
+        allStateChart->axisX()->setRange(0,controller.getNowTime());
+    }
+    nowStateChart->legend()->setVisible(true);
+    allStateChart->legend()->setVisible(true);
+    allStateChart->update();
+}
 //鼠标事件
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
@@ -126,7 +276,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     {
         ui->cellYSpin->setValue(cellY);
     }
-    update();//TODO去除重复update
+    //TODO去除重复update
+    ui->mapShowFrame->update();
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event){
@@ -135,92 +286,15 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event){
 
 void MainWindow::timerUpdate()
 {
-    controller.runOneFrame();
-    ui->timeSpend->setText(QString().setNum(controller.getTimeSpend()*1.0/1000,'f',3));
+    controller.selfAddNowTime();//TODO改为自增一帧，可播放历史快照
     updateProgress();
+    monitorFix();
 }
 
 //绘图
 void MainWindow::paintEvent(QPaintEvent *qPaintEvent)
 {
-    int cellColNum,cellRowNum,cellWidth,cellHeight;
-    cellColNum=controller.getCellColNum();
-    cellRowNum=controller.getCellRowNum();
-    cellWidth=ui->mapShowFrame->width()/cellColNum;
-    cellHeight=ui->mapShowFrame->height()/cellRowNum;
-    cellWidth=cellHeight=min(cellWidth,cellHeight);
-
-    QPainter painter(this);
-    //以label左上角为原点
-    painter.translate(ui->centralwidget->x()+ui->mapShowFrame->x(),
-                      ui->centralwidget->y()+ui->mapShowFrame->y());
-    //设置网格颜色
-    painter.setPen(QPen(Qt::gray));
-    //清空画布
-    QBrush brush(Qt::white,Qt::SolidPattern);
-    painter.setBrush(brush);
-    painter.drawRect(0,0,ui->mapShowFrame->width()-1,ui->mapShowFrame->height()-1);
-
-    //绘制细胞
-    std::vector<StateColor>& state2Color=controller.getState2Color();
-
-    brush.setColor(QColor(state2Color[0].r,state2Color[0].g,state2Color[0].b));
-    painter.setBrush(brush);
-    painter.drawRect(0,0,cellColNum*cellWidth,cellRowNum*cellHeight);
-    for(int y=0;y<cellRowNum;y++)
-    {
-        for(int x=0;x<cellColNum;x++)
-        {
-            int state=controller.getState(x,y);
-            for(int i=state2Color.size()-1;i>0;--i){//TODO 待优化，减少颜色修改和内层循环(影响不大)、画矩形个数(影响大)、矩阵大小(影响也大)
-                if(state>=state2Color[i].from && state<=state2Color[i].to){
-                    brush.setColor(QColor(state2Color[i].r,state2Color[i].g,state2Color[i].b));
-                    painter.setBrush(brush);
-                    painter.drawRect(x*cellWidth,y*cellHeight,cellWidth,cellHeight);
-                    break;
-                }
-            }
-        }
-    }
-
-    //绘制网格
-    for(int x=0;x<=cellColNum;x++)
-    {
-        painter.drawLine(x*cellWidth,0,x*cellWidth,cellRowNum*cellHeight);
-    }
-    for(int y=0;y<=cellRowNum;y++)
-    {
-        painter.drawLine(0,y*cellHeight,cellColNum*cellWidth,y*cellHeight);
-    }
-
-    //特效
-    QPoint point=ui->mapShowFrame->mapFromGlobal(QCursor().pos());
-    int cellX=point.x()/cellWidth;
-    int cellY=point.y()/cellHeight;
-    if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum){
-        int mX=cellX*cellWidth,mY=cellY*cellHeight;
-        //绘制元胞边界
-        painter.setBrush(QBrush());
-        if(curType==2){
-            painter.setPen(QPen(Qt::red, 2));
-            int w=cellWidth,h=cellHeight,x=mX,y=mY;
-            if(w>0 && w<4 && h>0 && h <4){
-                x-=(4-w)/2;
-                y-=(4-h)/2;
-                w=h=4;
-            }
-            painter.drawRect(x,y,w,h);
-            painter.setPen(QPen(Qt::white, 1));
-            painter.drawRect(x+1,y+1,w-2,h-2);
-            painter.drawRect(x-2,y-2,w+3,h+3);
-        }else if(curType==3){
-            painter.setPen(QPen(Qt::red, 4));
-            painter.drawRect(0,0,cellColNum*cellWidth,cellColNum*cellHeight);
-            painter.setPen(QPen(Qt::white, 1));
-            painter.drawRect(3,3,cellColNum*cellWidth-6,cellColNum*cellHeight-6);
-        }
-    }
-    painter.end();
+//    ui->mapShowFrame->update();
 }
 
 //播放控件
@@ -228,11 +302,11 @@ void MainWindow::on_startPushButton_clicked()
 {
     if(startButtion==1 || startButtion==3){
         timer.start(1000/controller.getSpeed());
-        ui->startPushButton->setText("暂停");
+        ui->startPushButton->setText("II");
         startButtion=2;
     }else if(startButtion==2){
         timer.stop();
-        ui->startPushButton->setText("继续");
+        ui->startPushButton->setText("▶");
         startButtion=3;
     }
 }
@@ -248,11 +322,10 @@ void MainWindow::on_speedSlider_valueChanged(int arg1)
 
 void MainWindow::on_nextFrameButton_clicked()
 {
-    controller.selfAddNowTime();
+    timerUpdate();
     if(controller.getNowTime()==controller.getRunTime()){
-        ui->timeSpend->setText(QString().setNum(controller.getTimeSpend()*1.0/1000,'f',3));
+        monitorFix();
     }
-    updateProgress();
 }
 
 void MainWindow::on_lastFrameButton_clicked()
@@ -265,32 +338,16 @@ void MainWindow::on_progressSlider_valueChanged(int arg1)
 {
     controller.setNowTime(arg1);
     ui->nowTimeLabel->setText(QString::number(controller.getNowTime(),10));
-    update();
+    //TODO去除重复update
+    ui->mapShowFrame->update();
+    updateChart();
 }
 
 void MainWindow::updateProgress(){
     ui->runTimeLabel->setText(QString::number(controller.getRunTime(),10));
     ui->progressSlider->setMaximum(controller.getRunTime());
     ui->progressSlider->setValue(controller.getNowTime());
-}
-
-void MainWindow::on_modelset_triggered()
-{
-    if(startButtion==2){
-        timer.stop();
-        ui->startPushButton->setText("继续");
-        startButtion=3;
-    }
-
-    ModelSetting *ms=new ModelSetting(nullptr,this);
-    ms->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
-    ms->show();
-
-}
-
-void MainWindow::on_useDoc_triggered()
-{
-    //...
+    monitorDyn();
 }
 
 void MainWindow::reShowMap()
@@ -298,6 +355,8 @@ void MainWindow::reShowMap()
     ui->nowTimeLabel->setText(QString::number(controller.getNowTime(),10));
     ui->runTimeLabel->setText(QString::number(controller.getRunTime(),10));
     ui->progressSlider->setValue(controller.getNowTime());
+    initChart();//TODO注意释放内存
+    updateChart();
 }
 //操作
 void MainWindow::clickEvent(QPoint &point)
@@ -318,13 +377,19 @@ void MainWindow::clickEvent(QPoint &point)
     int cellY=y/cellHeight;
     if(x>=0 && cellX<cellColNum && y>=0 && cellY<cellRowNum)
     {
+        bool change=false;
         if(curType==2){
             controller.clickCell(cellX,cellY);
+            change=true;
         }else if(curType==3){
             controller.allClick();
+            change=true;
         }
         showState();
-        update();
+        if(change){
+            ui->mapShowFrame->update();
+            updateChart();
+        }
     }
 }
 
@@ -394,6 +459,7 @@ void MainWindow::on_curTypeButton1_clicked(bool checked)
 {
     if(checked){
         curType=1;
+        controller.setCurType(1);
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton3->setChecked(false);
         ui->curTypeButton4->setChecked(false);
@@ -405,6 +471,7 @@ void MainWindow::on_curTypeButton2_clicked(bool checked)
 {
     if(checked){
         curType=2;
+        controller.setCurType(2);
         ui->curTypeButton1->setChecked(false);
         ui->curTypeButton3->setChecked(false);
         ui->curTypeButton4->setChecked(false);
@@ -417,6 +484,7 @@ void MainWindow::on_curTypeButton3_clicked(bool checked)
 {
     if(checked){
         curType=3;
+        controller.setCurType(3);
         ui->curTypeButton1->setChecked(false);
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton4->setChecked(false);
@@ -428,9 +496,98 @@ void MainWindow::on_curTypeButton4_clicked(bool checked)
 {
     if(checked){
         curType=4;
+        controller.setCurType(4);
         ui->curTypeButton1->setChecked(false);
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton3->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::CrossCursor);
     }
+}
+
+void MainWindow::on_resetButton_clicked()
+{
+    if (QMessageBox::question(this, "提示", "确定要重置吗?", QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes) {
+        if(startButtion==2){
+            timer.stop();
+            ui->startPushButton->setText("▶");
+            startButtion=1;
+        }
+        controller.init();
+        reShowMap();
+    }
+}
+
+//菜单
+void MainWindow::on_modelSet_triggered()
+{
+    if(startButtion==2){
+        timer.stop();
+        ui->startPushButton->setText("▶");
+        startButtion=3;
+    }
+
+    ModelSetting *ms=new ModelSetting(nullptr,this);
+    ms->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
+    ms->show();
+
+}
+
+void MainWindow::on_exportMapImage_triggered()
+{
+    QDateTime localTime(QDateTime::currentDateTimeUtc().toLocalTime());
+    QString fileName = QFileDialog::getSaveFileName(this,
+                 tr("保存地图"),localTime.toString("yyyyMMddhhmmss")+".png",
+                 tr("*.png;; *.jpg;; *.gif;; *.bmp;; *.tif")); //选择路径
+    if(!fileName.isEmpty()){
+        QImage image = ui->mapShowFrame->grab().toImage();
+        image.save(fileName);
+    }
+}
+
+void MainWindow::on_exportNowStaImage_triggered()
+{
+    QDateTime localTime(QDateTime::currentDateTimeUtc().toLocalTime());
+    QString fileName = QFileDialog::getSaveFileName(this,
+                  tr("保存统计图(当前状态)"),localTime.toString("yyyyMMddhhmmss")+".png",
+                  tr("*.png;; *.jpg;; *.gif;; *.bmp;; *.tif")); //选择路径
+    if(!fileName.isEmpty()){
+         QImage image = ui->graphicsView_3->grab().toImage();
+         image.save(fileName);
+     }
+}
+
+void MainWindow::on_exportAllStaImage_triggered()
+{
+    QDateTime localTime(QDateTime::currentDateTimeUtc().toLocalTime());
+    QString fileName = QFileDialog::getSaveFileName(this,
+                  tr("保存统计图(全状态)"),localTime.toString("yyyyMMddhhmmss")+".png",
+                  tr("*.png;; *.jpg;; *.gif;; *.bmp;; *.tif")); //选择路径
+    if(!fileName.isEmpty()){
+         QImage image = ui->graphicsView->grab().toImage();
+         image.save(fileName);
+     }
+}
+
+void MainWindow::on_useDoc_triggered()
+{
+    //...
+}
+
+//监控
+
+void MainWindow::monitorDyn()
+{
+    ui->timeSpend->setText(QString().setNum(controller.getTimeSpend()*1.0/1000,'f',3));
+}
+
+DWORD getWinMemUsage(){
+    MEMORYSTATUS ms;
+    ::GlobalMemoryStatus(&ms);
+    return ms.dwMemoryLoad*ms.dwAvailPhys/100;
+}
+
+void MainWindow::monitorFix()
+{
+//    ui->ramUseLabel->setText(QString::number(getWinMemUsage()/1000000)+"MB,"+"%");
+//    ui->cpuUseLabel->setText(QString::number(getWinCpuUsage())+"%");
 }

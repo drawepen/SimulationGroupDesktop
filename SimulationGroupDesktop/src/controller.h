@@ -11,19 +11,24 @@ public:
     Controller();
     //设置model
     void setCellAction(std::vector<std::string> codes);
-    std::vector<std::string>& getActionCodes(){
-       return model.getActionCodes();
-    }
     //执行流程
     bool start();
-    bool suspend();         //暂停或继续
+    bool suspend();//暂停或继续
     bool stop();
     void runOneFrame();
     void allClick();
     void initState();
-    void init(){nowTime=runTime=0;updateCellAndMap();}
+    void init();
+    void clickNeighbor(int xSub,int ySub);
+    void setModelNeighborRule(int type);
+public:
+    std::vector<std::string>& getActionCodes(){
+       return model.getActionCodes();
+    }
     //设置执行流程参数
-
+    void setRootPath(char *path){
+        shellTool.setRootPath(path);
+    }
     //界面交互
     void clickCell(int x,int y);
     int getState(int x,int y);
@@ -35,7 +40,7 @@ public:
     int getNowTime(){return nowTime;}
     int getRunTime(){return runTime;}
     int getInterval(){return interval;}
-    int getTimeSpend(){return realTimeSpend;}
+    int getTimeSpend(){return realTimeSpend[nowTime];}
     void setSpeed(int speed){
         if(speed<=0) return;
         this->speed=speed;
@@ -56,28 +61,80 @@ public:
             --nowTime;
         }
     }
+    std::vector<std::pair<int,int>> &getStatistics(){
+        return model.getStatistics(nowTime);
+    }
+    int getCurType(){
+        return curType;
+    }
+    void setCurType(int curType){
+        this->curType=curType;
+    }
+    //元胞邻居规则设置
+    void initTempNeighborRule(){
+        tempNeighborRule=model.getNeighborRule();
+    }
+    std::vector<std::pair<int,int>>& getTempNeighborRule(){
+        return tempNeighborRule;
+    }
+    void setTempNeighborRule(int type){
+        switch (type) {
+        case 0:
+            tempNeighborRule=model.relCoosF;
+            break;
+        case 1:
+            tempNeighborRule=model.relCoosM;
+            break;
+        case 2:
+            tempNeighborRule=model.relCoosME;
+            break;
+        }
+    }
     //操作
-    int getOperationType(){return operationType;}
-    void setOperationType(int value){this->operationType=value;}
-    void setValueType(int value){this->valueType=value;}
-    int getOperationValue(){return operationValue;}
-    int setOperationValue(int value){this->operationValue=value;}
-    int getOperationValue2(){return operationValue2;}
-    int setOperationValue2(int value){this->operationValue2=value;}
+    int getOperationType(){
+        return operationType;
+    }
+    void setOperationType(int value){
+        this->operationType=value;
+    }
+    void setValueType(int value){
+        this->valueType=value;
+    }
+    int getOperationValue(){
+        return operationValue;
+    }
+    int setOperationValue(int value){
+        this->operationValue=value;
+    }
+    int getOperationValue2(){
+        return operationValue2;
+    }
+    int setOperationValue2(int value){
+        this->operationValue2=value;
+    }
 
     //模型参数设置
-    std::vector<std::pair<int,int>>& getNowModelNeighborRule(){return model.getNeighborRule();}
-    int getModelNeighborRuleType(){return model.getNeighborRuleType();}
-    void setModelNeighborRule(int type);
-    std::pair<int,int> getCellNum(){return model.getCellNum();}
+    std::vector<std::pair<int,int>>& getNowModelNeighborRule(){
+        return model.getNeighborRule();
+    }
+    int getModelNeighborRuleType(){
+        return model.getNeighborRuleType();
+    }
+    std::pair<int,int> getCellNum(){
+        return model.getCellNum();
+    }
     void setCellNum(std::pair<int,int> num){
         model.setCellNum(num);
     }
     void setState2Color(std::vector<StateColor> state2Color){
         model.setState2Color(state2Color);
     }
-    std::vector<StateColor>& getState2Color(){return model.getState2Color();}
-    StateColor getDefColor(){return model.getDefColor();}
+    std::vector<StateColor>& getState2Color(){
+        return model.getState2Color();
+    }
+    StateColor getDefColor(){
+        return model.getDefColor();
+    }
 private:
     //模型
     Model model;
@@ -86,21 +143,22 @@ private:
     int runTime=0;          //当前运行的最大时间，从0开始计数
     int interval=100000;    //两帧开始执行时间点的间隔时间(us)
     int speed=10;           //预计每秒执行多少帧
-    int64_t realTimeSpend;      //当前帧执行完花费的实际时间(us)
+    vector<int64_t> realTimeSpend;  //当前帧执行完花费的实际时间(us)
     //操作
     int mouseType=0;
     int operationType=0;    //0设值1累加值
     int operationValue=0;
     int operationValue2=1;
     int valueType=0;//0固定值1随机值
-
+    int curType=1;  //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
+    //模型设置
+    ShellTool shellTool;
+    std::vector<std::pair<int,int>> tempNeighborRule;
     //表达式计算
     int count(Cell &cell,int value);
 
-    //模型设置
-
 private:
-    void updateCellAndMap(){model.updateCellAndMap();initState();}
+    void updateCellAndMap();
 };
 
 #endif // CONTROLLER_H

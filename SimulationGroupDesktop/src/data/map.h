@@ -5,15 +5,30 @@
 class Map
 {
 public:
-    int getwidth(){return width;};
-    int getheight(){return height;};
-    void changewidth(int value){width=value;};
-    void changeheight(int value){height=value;};
-    int getColNum(){return colNum;};
-    int getRowNum(){return rowNum;};
-    void setWidthNum(int value){colNum=value;};
-    void setHeightNum(int value){rowNum=value;};
-
+    int getwidth(){
+        return width;
+    }
+    int getheight(){
+        return height;
+    }
+    void changewidth(int value){
+        width=value;
+    }
+    void changeheight(int value){
+        height=value;
+    }
+    int getColNum(){
+        return colNum;
+    }
+    int getRowNum(){
+        return rowNum;
+    }
+    void setWidthNum(int value){
+        colNum=value;
+    }
+    void setHeightNum(int value){
+        rowNum=value;
+    }
     std::vector<std::vector<Cell*>> cells;
 private:
     int width=16; //元胞大小

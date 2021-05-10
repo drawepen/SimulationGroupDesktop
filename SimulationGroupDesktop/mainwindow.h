@@ -4,6 +4,7 @@
 #include "src/controller.h"
 #include <QMainWindow>
 #include <QTimer>
+#include <QtCharts>
 //WARNING:注意循环引用头文件
 
 QT_BEGIN_NAMESPACE
@@ -15,7 +16,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(char *path,QWidget *parent = nullptr);
     ~MainWindow();
     void reShowMap();
 public:
@@ -33,6 +34,15 @@ private:
     int winZoomType=0;  //1右窗口
     int winZoomOriX,winZoomOriY;
 
+    //统计
+    QChart *nowStateChart=nullptr;
+    QPieSeries *nowStateSeries=nullptr;
+    QChart *allStateChart=nullptr;
+    std::unordered_map<int,QLineSeries*> allStateSeries;
+    QValueAxis *allStateAxisX=nullptr,*allStateAxisY=nullptr,*allStateAxisY2=nullptr;
+    int maxStatistic=INT32_MIN;
+    int specialEffType=0;
+
 protected:
     void paintEvent(QPaintEvent *event);
     void timerUpdate();
@@ -46,8 +56,11 @@ private slots:
     void on_lastFrameButton_clicked();
     void on_progressSlider_valueChanged(int arg1);
     void on_speedSlider_valueChanged(int arg1);
-    void on_modelset_triggered();
+    void on_modelSet_triggered();
     void on_useDoc_triggered();
+    void on_exportMapImage_triggered();
+    void on_exportNowStaImage_triggered();
+    void on_exportAllStaImage_triggered();
 
     void on_operationTypeCombo_activated(int index);
 
@@ -69,10 +82,16 @@ private slots:
 
     void on_curTypeButton4_clicked(bool checked);
 
+    void on_resetButton_clicked();
+
 private:
     void updateProgress();
     void clickEvent(QPoint &point);
     void showState();
+    void updateChart();
+    void initChart();
+    void monitorDyn();
+    void monitorFix();
 };
 
 

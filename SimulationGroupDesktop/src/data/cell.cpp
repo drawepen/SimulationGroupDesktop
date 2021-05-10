@@ -7,10 +7,6 @@ void Cell::update(int state){
     states.push_back(state);
 }
 void Cell::update(int state,int time){
-    if(mapX==14 && mapY==14){
-        int ab=0;
-        ab+=1;
-    }
     int len=states.size();
     if(time >= len){
         while(len<time){

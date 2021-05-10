@@ -18,36 +18,75 @@ class Model
 {
 public:
     Model();
-    ~Model(){
-        for(Action *action:actions){delete action;}
-    }
+    //执行
     void update(int nowTime);
-    void addAction(Action* action){actions.push_back(action);}
+    void statistics(int nowTime);
+    //元胞和地图初始化
+    void updateCellAndMap();
+    //配置设置
+    void setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type);//[{x差值,y差值}
+
+public:
+    ~Model(){
+        for(Action *action:actions){
+            delete action;
+        }
+    }
+    void addAction(Action* action){
+        actions.push_back(action);
+    }
     void clearAction(){
-        for(Action *action:actions){delete action;}
+        for(Action *action:actions){
+            delete action;
+        }
         actions.clear();
     }
-    void setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type);//[{x差值,y差值}]
-    int getNeighborRuleType(){return neighborRuleType;}
-    std::vector<std::pair<int,int>>& getNeighborRule(){return relCoos;}
+    int getNeighborRuleType(){
+        return neighborRuleType;
+    }
+    std::vector<std::pair<int,int>>& getNeighborRule(){
+        return relCoos;
+    }
     //状态参数设置
-    int getState(int x,int y){return map.cells[y][x]->getState();}
-    int getState(int x,int y,int time){return map.cells[y][x]->getState(time);}
-    void setState2Color(std::vector<StateColor> &state2Color){this->state2Color=state2Color;}
-    std::vector<StateColor>& getState2Color(){return state2Color;}
-    void setDefColor(StateColor sc){defColor=sc;}
-    StateColor getDefColor(){return defColor;}
+    int getState(int x,int y){
+        return map.cells[y][x]->getState();
+    }
+    int getState(int x,int y,int time){
+        return map.cells[y][x]->getState(time);
+    }
+    void setState2Color(std::vector<StateColor> &state2Color){
+        this->state2Color=state2Color;
+    }
+    std::vector<StateColor>& getState2Color(){
+        return state2Color;
+    }
+    void setDefColor(StateColor sc){
+        defColor=sc;
+    }
+    StateColor getDefColor(){
+        return defColor;
+    }
     std::vector<std::string>& getActionCodes(){
-       return actionCodes;
+        return actionCodes;
     }
     void setActionCodes(std::vector<std::string> &actionCodes){
        this->actionCodes=actionCodes;
     }
     //其他参数设置
-    std::pair<int,int> getCellNum(){return {map.getRowNum(),map.getColNum()};}
-    void setCellNum(std::pair<int,int> num){map.setHeightNum(num.first);map.setWidthNum(num.second);}
-    //元胞和地图初始化
-    void updateCellAndMap();
+    std::pair<int,int> getCellNum(){
+        return {map.getRowNum(),map.getColNum()};
+    }
+    void setCellNum(std::pair<int,int> num){
+        map.setHeightNum(num.first);
+        map.setWidthNum(num.second);
+    }
+    //统计
+    std::vector<std::pair<int,int>> &getStatistics(int nowTime){
+        return statisticStates[nowTime];
+    }
+    void init(){
+        statisticStates.clear();
+    }
 
 public:
     Map map;//创建地图
@@ -66,8 +105,11 @@ private:
     std::vector<StateColor> state2Color;   //元胞映射
     StateColor defColor;
     std::vector<std::string> actionCodes;
+    //统计状态值[每帧[<状态值,个数>]]
+    std::vector<std::vector<std::pair<int,int>>> statisticStates;
 
 private:
     void updateNeighbor();
+
 };
 #endif // MODEL_H

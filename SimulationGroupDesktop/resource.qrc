@@ -1,10 +1,19 @@
 <RCC>
     <qresource prefix="/image/cur">
+        <file>resources/cur_enlarge.ico</file>
+        <file>resources/cur_set.ico</file>
         <file>resources/resizeApi1.ico</file>
         <file>resources/resizeApi2.ico</file>
         <file>resources/resizeApi3.ico</file>
         <file>resources/resizeApi6.ico</file>
-        <file>resources/cur_enlarge.ico</file>
-        <file>resources/cur_set.ico</file>
+    </qresource>
+    <qresource prefix="/image/button">
+        <file>resources/reset.png</file>
+    </qresource>
+    <qresource prefix="/file/build">
+        <file>resources/ActionLib/ActionLib.h</file>
+        <file>resources/ActionLib/ActionLib.pro</file>
+        <file>resources/ActionLib/ActionLib_global.h</file>
+        <file>resources/ActionLib/build.bat</file>
     </qresource>
 </RCC>

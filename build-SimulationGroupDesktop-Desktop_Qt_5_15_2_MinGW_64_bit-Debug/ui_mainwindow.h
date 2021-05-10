@@ -30,15 +30,20 @@
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+#include <showframe.h>
+#include "qchartview.h"
 
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow
 {
 public:
-    QAction *modelset;
+    QAction *modelSet;
     QAction *modelnew;
     QAction *useDoc;
+    QAction *exportMapImage;
+    QAction *exportNowStaImage;
+    QAction *exportAllStaImage;
     QWidget *centralwidget;
     QGridLayout *gridLayout;
     QWidget *widget_4;
@@ -55,12 +60,13 @@ public:
     QLabel *speedShowlabel2;
     QPushButton *startPushButton;
     QDial *speedSlider;
-    QFrame *mapShowFrame;
+    QPushButton *resetButton;
+    ShowFrame *mapShowFrame;
     QHBoxLayout *horizontalLayout_4;
     QSpacerItem *horizontalSpacer_2;
     QWidget *widget_6;
     QFrame *frame;
-    QWidget *widget_7;
+    QGridLayout *gridLayout_2;
     QFrame *frame_2;
     QComboBox *operationTypeCombo;
     QSpinBox *operationValueSpin;
@@ -74,7 +80,8 @@ public:
     QSpinBox *cellYSpin;
     QTableWidget *stateTable;
     QCheckBox *checkBox;
-    QWidget *widget_8;
+    QtCharts::QChartView *graphicsView_3;
+    QtCharts::QChartView *graphicsView;
     QWidget *widget_5;
     QHBoxLayout *horizontalLayout_3;
     QSpacerItem *horizontalSpacer;
@@ -83,6 +90,10 @@ public:
     QLabel *timeSpend;
     QLabel *label;
     QLabel *label_3;
+    QLabel *label_6;
+    QLabel *label_7;
+    QLabel *cpuUseLabel;
+    QLabel *ramUseLabel;
     QFrame *toolFrame;
     QPushButton *curTypeButton1;
     QPushButton *curTypeButton2;
@@ -90,6 +101,7 @@ public:
     QPushButton *curTypeButton4;
     QMenuBar *menubar;
     QMenu *menu;
+    QMenu *menu_7;
     QMenu *menu_2;
     QMenu *menu_3;
     QMenu *menu_4;
@@ -101,12 +113,18 @@ public:
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
         MainWindow->resize(807, 523);
-        modelset = new QAction(MainWindow);
-        modelset->setObjectName(QString::fromUtf8("modelset"));
+        modelSet = new QAction(MainWindow);
+        modelSet->setObjectName(QString::fromUtf8("modelSet"));
         modelnew = new QAction(MainWindow);
         modelnew->setObjectName(QString::fromUtf8("modelnew"));
         useDoc = new QAction(MainWindow);
         useDoc->setObjectName(QString::fromUtf8("useDoc"));
+        exportMapImage = new QAction(MainWindow);
+        exportMapImage->setObjectName(QString::fromUtf8("exportMapImage"));
+        exportNowStaImage = new QAction(MainWindow);
+        exportNowStaImage->setObjectName(QString::fromUtf8("exportNowStaImage"));
+        exportAllStaImage = new QAction(MainWindow);
+        exportAllStaImage->setObjectName(QString::fromUtf8("exportAllStaImage"));
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         gridLayout = new QGridLayout(centralwidget);
@@ -191,14 +209,14 @@ public:
         nextFrameButton->setObjectName(QString::fromUtf8("nextFrameButton"));
         nextFrameButton->setGeometry(QRect(190, 20, 31, 31));
         QFont font1;
-        font1.setPointSize(16);
+        font1.setPointSize(20);
         nextFrameButton->setFont(font1);
-        nextFrameButton->setCursor(QCursor(Qt::WhatsThisCursor));
+        nextFrameButton->setCursor(QCursor(Qt::ArrowCursor));
         lastFrameButton = new QPushButton(widget);
         lastFrameButton->setObjectName(QString::fromUtf8("lastFrameButton"));
         lastFrameButton->setGeometry(QRect(70, 20, 31, 31));
         lastFrameButton->setFont(font1);
-        lastFrameButton->setCursor(QCursor(Qt::WhatsThisCursor));
+        lastFrameButton->setCursor(QCursor(Qt::ArrowCursor));
         speedShowLabel = new QLabel(widget);
         speedShowLabel->setObjectName(QString::fromUtf8("speedShowLabel"));
         speedShowLabel->setGeometry(QRect(340, 20, 51, 31));
@@ -216,8 +234,15 @@ public:
         startPushButton = new QPushButton(widget);
         startPushButton->setObjectName(QString::fromUtf8("startPushButton"));
         startPushButton->setGeometry(QRect(120, 20, 51, 31));
-        startPushButton->setFont(font1);
+        QFont font3;
+        font3.setFamily(QString::fromUtf8("Bauhaus 93"));
+        font3.setPointSize(20);
+        font3.setBold(false);
+        font3.setItalic(false);
+        font3.setWeight(50);
+        startPushButton->setFont(font3);
         startPushButton->setCursor(QCursor(Qt::ArrowCursor));
+        startPushButton->setStyleSheet(QString::fromUtf8("font: 20pt \"Bauhaus 93\";"));
         startPushButton->setIconSize(QSize(16, 16));
         speedSlider = new QDial(widget);
         speedSlider->setObjectName(QString::fromUtf8("speedSlider"));
@@ -230,13 +255,17 @@ public:
         speedSlider->setInvertedControls(false);
         speedSlider->setWrapping(true);
         speedSlider->setNotchesVisible(false);
+        resetButton = new QPushButton(widget);
+        resetButton->setObjectName(QString::fromUtf8("resetButton"));
+        resetButton->setGeometry(QRect(20, 20, 31, 31));
+        resetButton->setStyleSheet(QString::fromUtf8(""));
 
         verticalLayout->addWidget(widget);
 
 
         gridLayout->addWidget(widget_4, 1, 0, 1, 3);
 
-        mapShowFrame = new QFrame(centralwidget);
+        mapShowFrame = new ShowFrame(centralwidget);
         mapShowFrame->setObjectName(QString::fromUtf8("mapShowFrame"));
         mapShowFrame->setMinimumSize(QSize(60, 0));
         mapShowFrame->setCursor(QCursor(Qt::ArrowCursor));
@@ -271,63 +300,74 @@ public:
         frame->setObjectName(QString::fromUtf8("frame"));
         sizePolicy3.setHeightForWidth(frame->sizePolicy().hasHeightForWidth());
         frame->setSizePolicy(sizePolicy3);
-        frame->setMinimumSize(QSize(240, 0));
-        QFont font3;
-        font3.setPointSize(9);
-        frame->setFont(font3);
+        frame->setMinimumSize(QSize(360, 0));
+        QFont font4;
+        font4.setPointSize(9);
+        frame->setFont(font4);
         frame->setAutoFillBackground(false);
         frame->setFrameShape(QFrame::StyledPanel);
         frame->setFrameShadow(QFrame::Raised);
         frame->setLineWidth(1);
-        widget_7 = new QWidget(frame);
-        widget_7->setObjectName(QString::fromUtf8("widget_7"));
-        widget_7->setGeometry(QRect(1, 1, 238, 576));
-        widget_7->setLayoutDirection(Qt::LeftToRight);
-        frame_2 = new QFrame(widget_7);
+        gridLayout_2 = new QGridLayout(frame);
+        gridLayout_2->setSpacing(0);
+        gridLayout_2->setObjectName(QString::fromUtf8("gridLayout_2"));
+        gridLayout_2->setContentsMargins(0, 0, 0, 0);
+        frame_2 = new QFrame(frame);
         frame_2->setObjectName(QString::fromUtf8("frame_2"));
-        frame_2->setGeometry(QRect(0, 0, 231, 41));
+        frame_2->setMinimumSize(QSize(0, 41));
+        frame_2->setMaximumSize(QSize(16777215, 41));
         frame_2->setFrameShape(QFrame::StyledPanel);
         frame_2->setFrameShadow(QFrame::Raised);
         operationTypeCombo = new QComboBox(frame_2);
         operationTypeCombo->addItem(QString());
         operationTypeCombo->addItem(QString());
         operationTypeCombo->setObjectName(QString::fromUtf8("operationTypeCombo"));
-        operationTypeCombo->setGeometry(QRect(10, 10, 41, 22));
+        operationTypeCombo->setGeometry(QRect(0, 10, 41, 22));
         operationTypeCombo->setLayoutDirection(Qt::LeftToRight);
         operationValueSpin = new QSpinBox(frame_2);
         operationValueSpin->setObjectName(QString::fromUtf8("operationValueSpin"));
-        operationValueSpin->setGeometry(QRect(60, 10, 42, 22));
+        operationValueSpin->setGeometry(QRect(50, 10, 42, 22));
         operationValueSpin->setMinimum(-214748364);
         operationValueSpin->setMaximum(2147483647);
         operationValueSpin2 = new QSpinBox(frame_2);
         operationValueSpin2->setObjectName(QString::fromUtf8("operationValueSpin2"));
-        operationValueSpin2->setGeometry(QRect(130, 10, 42, 22));
+        operationValueSpin2->setGeometry(QRect(120, 10, 42, 22));
         operationValueSpin2->setMinimum(-214748364);
         operationValueSpin2->setMaximum(2147483647);
         intervalSymbolLable = new QLabel(frame_2);
         intervalSymbolLable->setObjectName(QString::fromUtf8("intervalSymbolLable"));
-        intervalSymbolLable->setGeometry(QRect(110, 10, 16, 21));
+        intervalSymbolLable->setGeometry(QRect(100, 10, 16, 21));
         randButton = new QCheckBox(frame_2);
         randButton->setObjectName(QString::fromUtf8("randButton"));
-        randButton->setGeometry(QRect(180, 10, 51, 21));
-        frame_3 = new QFrame(widget_7);
+        randButton->setGeometry(QRect(170, 10, 51, 21));
+        randButton->setLayoutDirection(Qt::LeftToRight);
+
+        gridLayout_2->addWidget(frame_2, 0, 0, 1, 2);
+
+        frame_3 = new QFrame(frame);
         frame_3->setObjectName(QString::fromUtf8("frame_3"));
-        frame_3->setGeometry(QRect(0, 40, 231, 151));
+        QSizePolicy sizePolicy4(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        sizePolicy4.setHorizontalStretch(0);
+        sizePolicy4.setVerticalStretch(0);
+        sizePolicy4.setHeightForWidth(frame_3->sizePolicy().hasHeightForWidth());
+        frame_3->setSizePolicy(sizePolicy4);
+        frame_3->setMinimumSize(QSize(170, 0));
+        frame_3->setMaximumSize(QSize(170, 16777215));
         frame_3->setFrameShape(QFrame::StyledPanel);
         frame_3->setFrameShadow(QFrame::Raised);
         label_4 = new QLabel(frame_3);
         label_4->setObjectName(QString::fromUtf8("label_4"));
-        label_4->setGeometry(QRect(10, 10, 21, 21));
+        label_4->setGeometry(QRect(5, 10, 16, 21));
         label_5 = new QLabel(frame_3);
         label_5->setObjectName(QString::fromUtf8("label_5"));
-        label_5->setGeometry(QRect(90, 10, 21, 21));
+        label_5->setGeometry(QRect(67, 10, 16, 21));
         cellXSpin = new QSpinBox(frame_3);
         cellXSpin->setObjectName(QString::fromUtf8("cellXSpin"));
-        cellXSpin->setGeometry(QRect(30, 10, 42, 22));
+        cellXSpin->setGeometry(QRect(20, 10, 42, 22));
         cellXSpin->setMaximum(10000);
         cellYSpin = new QSpinBox(frame_3);
         cellYSpin->setObjectName(QString::fromUtf8("cellYSpin"));
-        cellYSpin->setGeometry(QRect(110, 10, 42, 22));
+        cellYSpin->setGeometry(QRect(80, 10, 42, 22));
         cellYSpin->setMaximum(10000);
         stateTable = new QTableWidget(frame_3);
         if (stateTable->columnCount() < 2)
@@ -337,25 +377,46 @@ public:
         QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
         stateTable->setHorizontalHeaderItem(1, __qtablewidgetitem1);
         stateTable->setObjectName(QString::fromUtf8("stateTable"));
-        stateTable->setGeometry(QRect(10, 40, 211, 91));
+        stateTable->setGeometry(QRect(0, 40, 167, 98));
         stateTable->horizontalHeader()->setDefaultSectionSize(80);
         checkBox = new QCheckBox(frame_3);
         checkBox->setObjectName(QString::fromUtf8("checkBox"));
-        checkBox->setGeometry(QRect(180, 10, 51, 18));
-        widget_8 = new QWidget(widget_7);
-        widget_8->setObjectName(QString::fromUtf8("widget_8"));
-        widget_8->setGeometry(QRect(9, 259, 221, 281));
+        checkBox->setGeometry(QRect(124, 10, 51, 22));
+
+        gridLayout_2->addWidget(frame_3, 1, 0, 1, 1);
+
+        graphicsView_3 = new QtCharts::QChartView(frame);
+        graphicsView_3->setObjectName(QString::fromUtf8("graphicsView_3"));
+        graphicsView_3->setMinimumSize(QSize(0, 0));
+        QFont font5;
+        font5.setFamily(QString::fromUtf8("Microsoft JhengHei UI"));
+        font5.setPointSize(6);
+        font5.setBold(false);
+        font5.setItalic(false);
+        font5.setWeight(50);
+        graphicsView_3->setFont(font5);
+        graphicsView_3->setStyleSheet(QString::fromUtf8("font: 6pt \"Microsoft JhengHei UI\";"));
+
+        gridLayout_2->addWidget(graphicsView_3, 1, 1, 1, 1);
+
+        graphicsView = new QtCharts::QChartView(frame);
+        graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
+        graphicsView->setMinimumSize(QSize(0, 220));
+
+        gridLayout_2->addWidget(graphicsView, 2, 0, 1, 2);
+
 
         gridLayout->addWidget(frame, 0, 2, 1, 1);
 
         widget_5 = new QWidget(centralwidget);
         widget_5->setObjectName(QString::fromUtf8("widget_5"));
-        QSizePolicy sizePolicy4(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        sizePolicy4.setHorizontalStretch(0);
-        sizePolicy4.setVerticalStretch(0);
-        sizePolicy4.setHeightForWidth(widget_5->sizePolicy().hasHeightForWidth());
-        widget_5->setSizePolicy(sizePolicy4);
+        QSizePolicy sizePolicy5(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy5.setHorizontalStretch(0);
+        sizePolicy5.setVerticalStretch(0);
+        sizePolicy5.setHeightForWidth(widget_5->sizePolicy().hasHeightForWidth());
+        widget_5->setSizePolicy(sizePolicy5);
         widget_5->setMinimumSize(QSize(0, 20));
+        widget_5->setStyleSheet(QString::fromUtf8(""));
         horizontalLayout_3 = new QHBoxLayout(widget_5);
         horizontalLayout_3->setSpacing(0);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
@@ -368,24 +429,36 @@ public:
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
         sizePolicy1.setHeightForWidth(widget_3->sizePolicy().hasHeightForWidth());
         widget_3->setSizePolicy(sizePolicy1);
-        widget_3->setMinimumSize(QSize(151, 20));
+        widget_3->setMinimumSize(QSize(301, 20));
         widget_3->setMaximumSize(QSize(16777215, 16777215));
         widget_3->setLayoutDirection(Qt::LeftToRight);
         widget_3->setAutoFillBackground(false);
         label_2 = new QLabel(widget_3);
         label_2->setObjectName(QString::fromUtf8("label_2"));
-        label_2->setGeometry(QRect(130, 0, 21, 21));
+        label_2->setGeometry(QRect(280, 0, 21, 21));
         timeSpend = new QLabel(widget_3);
         timeSpend->setObjectName(QString::fromUtf8("timeSpend"));
-        timeSpend->setGeometry(QRect(70, 0, 54, 20));
+        timeSpend->setGeometry(QRect(220, 0, 54, 20));
         timeSpend->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
         label = new QLabel(widget_3);
         label->setObjectName(QString::fromUtf8("label"));
-        label->setGeometry(QRect(40, 0, 31, 21));
+        label->setGeometry(QRect(190, 0, 31, 21));
         label_3 = new QLabel(widget_3);
         label_3->setObjectName(QString::fromUtf8("label_3"));
-        label_3->setGeometry(QRect(0, 0, 31, 20));
+        label_3->setGeometry(QRect(160, 0, 21, 20));
         label_3->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
+        label_6 = new QLabel(widget_3);
+        label_6->setObjectName(QString::fromUtf8("label_6"));
+        label_6->setGeometry(QRect(10, 0, 21, 21));
+        label_7 = new QLabel(widget_3);
+        label_7->setObjectName(QString::fromUtf8("label_7"));
+        label_7->setGeometry(QRect(70, 0, 31, 21));
+        cpuUseLabel = new QLabel(widget_3);
+        cpuUseLabel->setObjectName(QString::fromUtf8("cpuUseLabel"));
+        cpuUseLabel->setGeometry(QRect(35, 0, 31, 21));
+        ramUseLabel = new QLabel(widget_3);
+        ramUseLabel->setObjectName(QString::fromUtf8("ramUseLabel"));
+        ramUseLabel->setGeometry(QRect(100, 0, 61, 21));
 
         horizontalLayout_3->addWidget(widget_3);
 
@@ -432,6 +505,8 @@ public:
         menubar->setGeometry(QRect(0, 0, 807, 21));
         menu = new QMenu(menubar);
         menu->setObjectName(QString::fromUtf8("menu"));
+        menu_7 = new QMenu(menu);
+        menu_7->setObjectName(QString::fromUtf8("menu_7"));
         menu_2 = new QMenu(menubar);
         menu_2->setObjectName(QString::fromUtf8("menu_2"));
         menu_3 = new QMenu(menubar);
@@ -450,8 +525,12 @@ public:
         menubar->addAction(menu_4->menuAction());
         menubar->addAction(menu_5->menuAction());
         menubar->addAction(menu_6->menuAction());
+        menu->addAction(menu_7->menuAction());
+        menu_7->addAction(exportMapImage);
+        menu_7->addAction(exportNowStaImage);
+        menu_7->addAction(exportAllStaImage);
         menu_2->addAction(modelnew);
-        menu_2->addAction(modelset);
+        menu_2->addAction(modelSet);
         menu_6->addAction(useDoc);
 
         retranslateUi(MainWindow);
@@ -468,22 +547,26 @@ public:
 #if QT_CONFIG(whatsthis)
         MainWindow->setWhatsThis(QCoreApplication::translate("MainWindow", "<html><head/><body><p>\345\274\200\345\247\213</p></body></html>", nullptr));
 #endif // QT_CONFIG(whatsthis)
-        modelset->setText(QCoreApplication::translate("MainWindow", "\350\256\276\347\275\256", nullptr));
+        modelSet->setText(QCoreApplication::translate("MainWindow", "\350\256\276\347\275\256", nullptr));
         modelnew->setText(QCoreApplication::translate("MainWindow", "\346\226\260\345\273\272", nullptr));
         useDoc->setText(QCoreApplication::translate("MainWindow", "\344\275\277\347\224\250\346\226\207\346\241\243", nullptr));
+        exportMapImage->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272\345\234\260\345\233\276\344\270\272\345\233\276\347\211\207", nullptr));
+        exportNowStaImage->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272\347\273\237\350\256\241\345\233\276(\345\275\223\345\211\215\347\212\266\346\200\201)", nullptr));
+        exportAllStaImage->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272\347\273\237\350\256\241\345\233\276(\345\205\250\347\212\266\346\200\201)", nullptr));
         nowTimeLabel->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         runTimeLabel->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
 #if QT_CONFIG(whatsthis)
         nextFrameButton->setWhatsThis(QCoreApplication::translate("MainWindow", "<html><head/><body><p><span style=\" font-size:14pt;\">\344\270\213\344\270\200\345\270\247</span></p></body></html>", nullptr));
 #endif // QT_CONFIG(whatsthis)
-        nextFrameButton->setText(QCoreApplication::translate("MainWindow", ">>", nullptr));
+        nextFrameButton->setText(QCoreApplication::translate("MainWindow", "\302\273", nullptr));
 #if QT_CONFIG(whatsthis)
         lastFrameButton->setWhatsThis(QCoreApplication::translate("MainWindow", "<html><head/><body><p>\344\270\212\344\270\200\345\270\247</p></body></html>", nullptr));
 #endif // QT_CONFIG(whatsthis)
-        lastFrameButton->setText(QCoreApplication::translate("MainWindow", "<<", nullptr));
+        lastFrameButton->setText(QCoreApplication::translate("MainWindow", "\302\253", nullptr));
         speedShowLabel->setText(QCoreApplication::translate("MainWindow", "10", nullptr));
         speedShowlabel2->setText(QCoreApplication::translate("MainWindow", "\345\270\247/s", nullptr));
-        startPushButton->setText(QCoreApplication::translate("MainWindow", "\345\274\200\345\247\213", nullptr));
+        startPushButton->setText(QCoreApplication::translate("MainWindow", "\342\226\266", nullptr));
+        resetButton->setText(QString());
         operationTypeCombo->setItemText(0, QCoreApplication::translate("MainWindow", "=", nullptr));
         operationTypeCombo->setItemText(1, QCoreApplication::translate("MainWindow", "+", nullptr));
 
@@ -500,11 +583,16 @@ public:
         timeSpend->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "\347\272\277\347\250\213", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "1", nullptr));
+        label_6->setText(QCoreApplication::translate("MainWindow", "CPU", nullptr));
+        label_7->setText(QCoreApplication::translate("MainWindow", "\345\206\205\345\255\230", nullptr));
+        cpuUseLabel->setText(QCoreApplication::translate("MainWindow", "1%", nullptr));
+        ramUseLabel->setText(QCoreApplication::translate("MainWindow", "20MB", nullptr));
         curTypeButton1->setText(QString());
         curTypeButton2->setText(QString());
         curTypeButton3->setText(QString());
         curTypeButton4->setText(QString());
         menu->setTitle(QCoreApplication::translate("MainWindow", "\346\226\207\344\273\266", nullptr));
+        menu_7->setTitle(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272", nullptr));
         menu_2->setTitle(QCoreApplication::translate("MainWindow", "\346\250\241\345\236\213", nullptr));
         menu_3->setTitle(QCoreApplication::translate("MainWindow", "\346\223\215\344\275\234", nullptr));
         menu_4->setTitle(QCoreApplication::translate("MainWindow", "\347\273\237\350\256\241", nullptr));

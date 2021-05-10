@@ -14,6 +14,7 @@ SOURCES += \
     CodeEditor.cpp \
     main.cpp \
     modelsetting.cpp \
+    showframe.cpp \
     showview.cpp \
     src/data/rule/action.cpp \
     src/data/cell.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     mainwindow.h \
     CodeEditor.h \
     modelsetting.h \
+    showframe.h \
     showview.h \
     src/data/rule/action.h \
     src/data/cell.h \

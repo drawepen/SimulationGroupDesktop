@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
         QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication::setStyle(QStyleFactory::create("fusion"));
     QApplication a(argc, argv);
-    MainWindow w;
+    MainWindow w(argv[0]);
     w.show();
     return a.exec();
 }

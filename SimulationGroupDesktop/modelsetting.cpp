@@ -27,7 +27,15 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
         setActionTableText(ui->actionTable->rowCount()-1,QString(code.c_str()));
     }
     //元胞交互规则
+    controller->initTempNeighborRule();
     ui->comboBox->setCurrentIndex(controller->getModelNeighborRuleType());
+    if(controller->getModelNeighborRuleType()<3){
+        ui->label_4->setVisible(false);
+        ui->showView->setCursor(Qt::ArrowCursor);
+    }else{
+        ui->label_4->setVisible(true);
+        ui->showView->setCursor(Qt::PointingHandCursor);
+    }
 
     //状态颜色映射
     ui->stateMapTable->verticalHeader()->setMinimumWidth(20);
@@ -66,10 +74,10 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
         stateMapSpinBoxs[i*2-2]->setValue(stateColors[i].from);
         stateMapSpinBoxs[i*2-1]->setValue(stateColors[i].to);
         stateMapComboBoxs[i]->setCurrentIndex(stateColors[i].type);
-//        stateMapComboBoxs[i]->activated(stateColors[i].type);
         ui->stateMapTable->item(i,2)->setBackgroundColor(QColor(stateColors[i].r,stateColors[i].g,stateColors[i].b));
     }
 
+    ui->toolBox->setCurrentIndex(toolCurrentIndex);
     update();
 }
 
@@ -79,17 +87,21 @@ ModelSetting::~ModelSetting()
 }
 
 //绘图展示样例
-
 void ModelSetting::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-
+    //以label左上角为原点
+    painter.translate(ui->showView->x(),ui->showView->y());
+    if(toolCurrentIndex!=1){
+        //清空画布
+        QBrush brush(Qt::white,Qt::SolidPattern);
+        painter.setBrush(brush);
+        painter.drawRect(0,0,ui->showView->width()-1,ui->showView->height()-1);
+        return;
+    }
     //设置网格颜色
     QPen pen(Qt::gray);
     painter.setPen(pen);
-
-    //以label左上角为原点
-    painter.translate(ui->showView->x(),ui->showView->y());
 
     //清空画布
     QBrush brush(Qt::white,Qt::SolidPattern);
@@ -97,43 +109,69 @@ void ModelSetting::paintEvent(QPaintEvent *)
     painter.drawRect(0,0,ui->showView->width()-1,ui->showView->height()-1);
 
     //绘制网格
-    int cellWidthNum=7,cellHeightNum=7;
-    int cellWidth=ui->showView->width()/cellWidthNum,cellHeight=ui->showView->width()/cellWidthNum;
+    int cellColNum=7,cellRowNum=7;
+    int cellWidth=ui->showView->width()/cellColNum,cellHeight=ui->showView->width()/cellColNum;
     cellWidth=cellHeight=std::min(cellWidth,cellHeight);
-    for(int x=0;x<=cellWidthNum;x++)
+    for(int x=0;x<=cellColNum;x++)
     {
-        painter.drawLine(x*cellWidth,0,x*cellWidth,cellHeightNum*cellHeight);
+        painter.drawLine(x*cellWidth,0,x*cellWidth,cellRowNum*cellHeight);
     }
-    for(int y=0;y<=cellHeightNum;y++)
+    for(int y=0;y<=cellRowNum;y++)
     {
-        painter.drawLine(0,y*cellHeight,cellWidthNum*cellWidth,y*cellHeight);
+        painter.drawLine(0,y*cellHeight,cellColNum*cellWidth,y*cellHeight);
     }
 
     //绘制细胞
-    int cellX=3,cellY=3;
+    int cellCoreX=3,cellCoreY=3;
 
     brush.setColor(Qt::black);
     painter.setBrush(brush);
 
-    for(std::pair<int,int> cn:controller->getNowModelNeighborRule()){
-        int x=cellX+cn.first,y=cellY+cn.second;
+    for(std::pair<int,int> cn:controller->getTempNeighborRule()){
+        int x=cellCoreX+cn.first,y=cellCoreY+cn.second;
         painter.drawRect(x*cellWidth,y*cellHeight,cellWidth,cellHeight);
     }
 
     brush.setColor(Qt::red);
     painter.setBrush(brush);
-    painter.drawRect(cellX*cellWidth,cellY*cellHeight,cellWidth,cellHeight);
-
+    painter.drawRect(cellCoreX*cellWidth,cellCoreY*cellHeight,cellWidth,cellHeight);
+    //绘制特效
+    if(toolCurrentIndex==1 && ui->comboBox->currentIndex()==3){
+        QPoint point=ui->showView->mapFromGlobal(QCursor().pos());
+        int cellX=point.x()/cellWidth;
+        int cellY=point.y()/cellHeight;
+        printf("p%d,%d\n",cellX,cellY);fflush(stdout);
+        if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum &&
+                (cellX!=cellCoreX || cellY!=cellCoreY)){
+            int mX=cellX*cellWidth,mY=cellY*cellHeight;
+            //绘制元胞边界
+            painter.setBrush(QBrush());
+            painter.setPen(QPen(Qt::red, 2));
+            int w=cellWidth,h=cellHeight,x=mX,y=mY;
+            if(w>0 && w<4 && h>0 && h <4){
+                x-=(4-w)/2;
+                y-=(4-h)/2;
+                w=h=4;
+            }
+            painter.drawRect(x,y,w,h);
+            painter.setPen(QPen(Qt::white, 1));
+            painter.drawRect(x+1,y+1,w-2,h-2);
+            painter.drawRect(x-2,y-2,w+3,h+3);
+        }
+    }
     painter.end();
 }
 
 void ModelSetting::on_comboBox_activated(int index)
 {
     if(index<3){
-        controller->setModelNeighborRule(index);
+        ui->label_4->setVisible(false);
+        ui->showView->setCursor(Qt::ArrowCursor);
     }else{
-
+        ui->label_4->setVisible(true);
+        ui->showView->setCursor(Qt::PointingHandCursor);
     }
+    controller->setTempNeighborRule(index);
     update();
 }
 
@@ -145,6 +183,30 @@ void ModelSetting::on_cellRowNum_valueChanged(int arg1)
 void ModelSetting::on_cellColNum_valueChanged(int arg1)
 {
     cellColNum=arg1;
+}
+
+void ModelSetting::mouseDoubleClickEvent(QMouseEvent *e){
+    if(toolCurrentIndex==1){
+        int cellCoreX=3,cellCoreY=3;
+        int cellColNum=7,cellRowNum=7;
+        int cellWidth=ui->showView->width()/cellColNum,cellHeight=ui->showView->width()/cellRowNum;
+        QPoint point=ui->showView->mapFromGlobal(QCursor().pos());
+        int cellX=point.x()/cellWidth;
+        int cellY=point.y()/cellHeight;
+        printf("%d,%d\n",cellX,cellY);fflush(stdout);
+        if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum &&
+                (cellX!=cellCoreX || cellY!=cellCoreY)){
+            controller->clickNeighbor(cellX-cellCoreX,cellY-cellCoreY);
+            update();
+        }
+    }
+}
+
+void ModelSetting::mouseMoveEvent(QMouseEvent *event)
+{
+    if(toolCurrentIndex==1 && ui->comboBox->currentIndex()==3){
+       update();
+    }
 }
 
 //设置行为规则
@@ -315,6 +377,9 @@ void ModelSetting::on_buttonBox_accepted()
     }
     controller->setState2Color(state2Color);
 
+    //元胞交互设置
+    controller->setModelNeighborRule(ui->comboBox->currentIndex());
+
     if(change){
         controller->init();
         mainWindow->reShowMap();
@@ -324,4 +389,10 @@ void ModelSetting::on_buttonBox_accepted()
 void ModelSetting::on_buttonBox_rejected()
 {
 
+}
+
+void ModelSetting::on_toolBox_currentChanged(int index)
+{
+    toolCurrentIndex=index;
+    update();
 }

@@ -10,7 +10,9 @@ Model::Model()
     state2Color.push_back(defColor);
     state2Color.push_back(StateColor(1,INT32_MAX,0,0,0,0));//TODO删除
 }
-void Model::updateCellAndMap(){
+
+void Model::updateCellAndMap()
+{
     int cellId=0;
     cells.clear();
     for(int i=0,hLen=map.getRowNum();i<hLen;++i){
@@ -34,7 +36,8 @@ void Model::updateCellAndMap(){
     updateNeighbor();
 }
 
-void Model::update(int nowTime){
+void Model::update(int nowTime)
+{
     bool positionChang=false;
     for(Cell &cell:cells){
         for(Action *action:actions){
@@ -49,6 +52,7 @@ void Model::update(int nowTime){
     if(positionChang){
         updateNeighbor();
     }
+    statistics(nowTime);
 }
 
 void Model::setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type)
@@ -58,7 +62,8 @@ void Model::setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type)
     updateNeighbor();
 }
 
-void Model::updateNeighbor(){
+void Model::updateNeighbor()
+{
     for(int y=0,hLen=map.getRowNum();y<hLen;++y){
         for(int x=0,wLen=map.getColNum();x<wLen;++x){
             Cell *cell=map.cells[y][x];
@@ -70,5 +75,30 @@ void Model::updateNeighbor(){
                 }
             }
         }
+    }
+}
+
+
+void Model::statistics(int nowTime){
+    //统计
+    std::vector<std::pair<int,int>> statistics;
+    std::unordered_map<int,int> state2Count;
+    for(Cell &cell:cells){
+        int state=cell.getState(nowTime);
+        auto iter=state2Count.find(state);
+        if(iter!=state2Count.end()){
+            iter->second+=1;
+        }else{
+            state2Count.insert({state,1});
+        }
+    }
+    for(auto iter:state2Count){
+        statistics.emplace_back(iter.first,iter.second);
+    }
+    std::sort(statistics.begin(),statistics.end());
+    if(statisticStates.size()<=nowTime){
+        statisticStates.push_back(statistics);
+    }else{
+        statisticStates[nowTime]=statistics;
     }
 }

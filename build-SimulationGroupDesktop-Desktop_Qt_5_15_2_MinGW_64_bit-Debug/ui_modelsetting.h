@@ -48,6 +48,7 @@ public:
     QWidget *horizontalWidget;
     QWidget *widget;
     QComboBox *comboBox;
+    QLabel *label_4;
     QWidget *page;
     QPushButton *addActionButton;
     QTableWidget *actionTable;
@@ -148,10 +149,14 @@ public:
         comboBox->addItem(QString());
         comboBox->addItem(QString());
         comboBox->addItem(QString());
+        comboBox->addItem(QString());
         comboBox->setObjectName(QString::fromUtf8("comboBox"));
         comboBox->setGeometry(QRect(0, 0, 89, 22));
         sizePolicy.setHeightForWidth(comboBox->sizePolicy().hasHeightForWidth());
         comboBox->setSizePolicy(sizePolicy);
+        label_4 = new QLabel(horizontalWidget);
+        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setGeometry(QRect(120, 10, 121, 31));
         toolBox->addItem(cellNeighbor, QString::fromUtf8("\345\205\203\350\203\236\351\202\273\345\261\205\350\247\204\345\210\231"));
         page = new QWidget();
         page->setObjectName(QString::fromUtf8("page"));
@@ -193,12 +198,13 @@ public:
         sizePolicy1.setVerticalStretch(0);
         sizePolicy1.setHeightForWidth(showView->sizePolicy().hasHeightForWidth());
         showView->setSizePolicy(sizePolicy1);
+        showView->setCursor(QCursor(Qt::PointingHandCursor));
 
         retranslateUi(ModelSetting);
         QObject::connect(buttonBox, SIGNAL(accepted()), ModelSetting, SLOT(accept()));
         QObject::connect(buttonBox, SIGNAL(rejected()), ModelSetting, SLOT(reject()));
 
-        toolBox->setCurrentIndex(0);
+        toolBox->setCurrentIndex(1);
 
 
         QMetaObject::connectSlotsByName(ModelSetting);
@@ -224,7 +230,9 @@ public:
         comboBox->setItemText(0, QCoreApplication::translate("ModelSetting", "\345\206\257\350\257\272\344\276\235\346\233\274\345\236\213", nullptr));
         comboBox->setItemText(1, QCoreApplication::translate("ModelSetting", "\346\221\251\345\260\224\345\236\213", nullptr));
         comboBox->setItemText(2, QCoreApplication::translate("ModelSetting", "\346\211\251\345\261\225\346\221\251\345\260\224\345\236\213", nullptr));
+        comboBox->setItemText(3, QCoreApplication::translate("ModelSetting", "\350\207\252\345\256\232\344\271\211", nullptr));
 
+        label_4->setText(QCoreApplication::translate("ModelSetting", "\345\234\250\345\217\263\344\276\247\345\217\214\345\207\273\351\200\211\346\213\251 ->", nullptr));
         toolBox->setItemText(toolBox->indexOf(cellNeighbor), QCoreApplication::translate("ModelSetting", "\345\205\203\350\203\236\351\202\273\345\261\205\350\247\204\345\210\231", nullptr));
         addActionButton->setText(QCoreApplication::translate("ModelSetting", "\357\274\213", nullptr));
         QTableWidgetItem *___qtablewidgetitem4 = actionTable->horizontalHeaderItem(0);
