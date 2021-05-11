@@ -49,7 +49,8 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     icon4.addFile(tr(":/image/cur/resources/cur_enlarge.ico"));
     ui->curTypeButton4->setIcon(icon4);
     ui->curTypeButton4->setIconSize(QSize(26,26));
-    switch (controller.getCurType()) {
+    curType=controller.getCurType();
+    switch (curType) {
     case 1:
         ui->curTypeButton1->setChecked(true);
         break;
@@ -63,6 +64,7 @@ MainWindow::MainWindow(char *path,QWidget *parent)
         ui->curTypeButton4->setChecked(true);
         break;
     }
+
 
     ui->stateTable->verticalHeader()->setMinimumWidth(16);
     ui->stateTable->setColumnWidth(0,80);
@@ -261,6 +263,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
         }
         }
     }
+    ui->mapShowFrame->update();
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
@@ -316,6 +319,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
         ui->cellYSpin->setValue(cellY);
     }
     //TODO去除重复update
+    printf("mouve>>%d\n",rand());fflush(stdout);
     ui->mapShowFrame->update();
 }
 
