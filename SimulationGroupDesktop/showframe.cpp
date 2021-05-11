@@ -79,12 +79,29 @@ void ShowFrame::paintEvent(QPaintEvent *qPaintEvent)
             painter.drawRect(x,y,w,h);
             painter.setPen(QPen(Qt::white, 1));
             painter.drawRect(x+1,y+1,w-2,h-2);
-            painter.drawRect(x-2,y-2,w+3,h+3);
+            painter.drawRect(x-2,y-2,w+4,h+4);
         }else if(controller.getCurType()==3){
             painter.setPen(QPen(Qt::red, 4));
             painter.drawRect(0,0,cellColNum*cellWidth,cellRowNum*cellHeight);
             painter.setPen(QPen(Qt::white, 1));
             painter.drawRect(3,3,cellColNum*cellWidth-6,cellRowNum*cellHeight-6);
+        }else if(controller.getCurType()==4){
+            int startCellX=controller.getStartCellXY().first;
+            int startCellY=controller.getStartCellXY().second;
+            if(startCellX>=0 && startCellY>=0){
+                painter.setPen(QPen(Qt::red, 2));
+                int w=cellWidth*abs(cellX-startCellX+1),h=cellHeight*abs(cellY-startCellY+1);
+                int x=min(cellX,startCellX)*cellWidth,y=min(cellY,startCellY)*cellHeight;
+                if(w>0 && w<4 && h>0 && h <4){
+                    x-=(4-w)/2;
+                    y-=(4-h)/2;
+                    w=h=4;
+                }
+                painter.drawRect(x,y,w,h);
+                painter.setPen(QPen(Qt::white, 1));
+                painter.drawRect(x+1,y+1,w-2,h-2);
+                painter.drawRect(x-2,y-2,w+4,h+4);
+            }
         }
     }
     painter.end();

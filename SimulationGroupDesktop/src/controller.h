@@ -31,6 +31,7 @@ public:
     }
     //界面交互
     void clickCell(int x,int y);
+    void clickCell(int fromX,int fromY,int toX,int toY);
     int getState(int x,int y);
     int getCellWidth(){return model.map.getwidth();}
     int getCellHeight(){return model.map.getheight();}
@@ -112,6 +113,13 @@ public:
     int setOperationValue2(int value){
         this->operationValue2=value;
     }
+    std::pair<int,int> getStartCellXY(){
+        return {startCellX,startCellY};
+    }
+    void setStartCellXY(int cellX,int cellY){
+        startCellX=cellX;
+        startCellY=cellY;
+    }
 
     //模型参数设置
     std::vector<std::pair<int,int>>& getNowModelNeighborRule(){
@@ -150,7 +158,8 @@ private:
     int operationValue=0;
     int operationValue2=1;
     int valueType=0;//0固定值1随机值
-    int curType=1;  //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
+    int curType=2;  //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
+    int startCellX=-1,startCellY=-1;
     //模型设置
     ShellTool shellTool;
     std::vector<std::pair<int,int>> tempNeighborRule;
@@ -159,6 +168,7 @@ private:
 
 private:
     void updateCellAndMap();
+    void operationOneCell(Cell *cell);
 };
 
 #endif // CONTROLLER_H

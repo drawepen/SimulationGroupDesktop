@@ -66,12 +66,8 @@ void Controller::initState(){
     model.statistics(runTime);
 }
 
-//点击操作不会生成新的帧，直接修改最后一帧
-void Controller::clickCell(int x,int y){
-    if(nowTime<runTime){
-        return;         //回放时不支持修改
-    }
-    Cell *cell=model.map.cells[y][x];
+void Controller::operationOneCell(Cell *cell)
+{
     int value=operationValue;
     if(valueType==1){
         value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
@@ -81,23 +77,42 @@ void Controller::clickCell(int x,int y){
     }else if(operationType==1){
         cell->update(cell->getState()+value,nowTime);
     }
+}
+
+//点击操作不会生成新的帧，直接修改最后一帧
+void Controller::clickCell(int x,int y)
+{
+    if(nowTime<runTime){
+        return;         //回放时不支持修改
+    }
+    Cell *cell=model.map.cells[y][x];
+    operationOneCell(cell);
     model.statistics(nowTime);
 }
 
-void Controller::allClick(){
+void Controller::clickCell(int fromX,int fromY,int toX,int toY)
+{
+    if(nowTime<runTime){
+        return;         //回放时不支持修改
+    }
+    int fX=min(fromX,toX),fY=min(fromY,toY);
+    int tX=max(fromX,toX),tY=max(fromY,toY);
+    for(int x=fX;x<=tX;++x){
+        for(int y=fY;y<=tY;++y){
+            Cell *cell=model.map.cells[y][x];
+            operationOneCell(cell);
+        }
+    }
+    model.statistics(nowTime);
+}
+
+void Controller::allClick()
+{
     if(nowTime<runTime){
         return;//回放时不支持修改
     }
     for(Cell &cell:model.cells){
-        int value=operationValue;
-        if(valueType==1){
-            value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
-        }
-        if(operationType==0){
-            cell.update(value,nowTime);
-        }else if(operationType==1){
-            cell.update(cell.getState()+value,nowTime);
-        }
+        operationOneCell(&cell);
     }
     model.statistics(nowTime);
 }
@@ -139,7 +154,8 @@ void Controller::clickNeighbor(int xSub,int ySub)
 }
 
 //设置模型
-void Controller::setCellAction(std::vector<std::string> codes){
+void Controller::setCellAction(std::vector<std::string> codes)
+{
     model.clearAction();
     std::vector<Action*> actions;
     for(auto code:codes){

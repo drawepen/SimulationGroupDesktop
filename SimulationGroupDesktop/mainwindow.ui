@@ -755,6 +755,28 @@
         </widget>
        </item>
        <item row="2" column="0" colspan="2">
+        <widget class="QWidget" name="widget_7" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>2</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>2</height>
+          </size>
+         </property>
+         <property name="cursor">
+          <cursorShape>SplitVCursor</cursorShape>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(255, 178, 102, 255), stop:0.55 rgba(235, 148, 61, 255), stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
         <widget class="QtCharts::QChartView" name="graphicsView">
          <property name="minimumSize">
           <size>
@@ -1108,6 +1130,7 @@
     <property name="title">
      <string>统计</string>
     </property>
+    <addaction name="actionz"/>
    </widget>
    <widget class="QMenu" name="menu_5">
     <property name="title">
@@ -1155,6 +1178,11 @@
   <action name="exportAllStaImage">
    <property name="text">
     <string>导出统计图(全状态)</string>
+   </property>
+  </action>
+  <action name="actionz">
+   <property name="text">
+    <string>展示统计图:是</string>
    </property>
   </action>
  </widget>

@@ -32,6 +32,9 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     ui->intervalSymbolLable->setVisible(controller.getOperationType()==2);
     ui->operationValueSpin2->setVisible(controller.getOperationType()==2);
     ui->randButton->setChecked(false);
+    ui->nextFrameButton->setToolTip("下一帧");
+    ui->lastFrameButton->setToolTip("上一帧");
+    ui->resetButton->setToolTip("重置");
 
     QIcon icon1,icon2,icon3,icon4;
     icon1.addFile(tr(":/image/cur/resources/resizeApi1.ico"));
@@ -46,7 +49,20 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     icon4.addFile(tr(":/image/cur/resources/cur_enlarge.ico"));
     ui->curTypeButton4->setIcon(icon4);
     ui->curTypeButton4->setIconSize(QSize(26,26));
-    ui->curTypeButton1->setChecked(true);
+    switch (controller.getCurType()) {
+    case 1:
+        ui->curTypeButton1->setChecked(true);
+        break;
+    case 2:
+        ui->curTypeButton2->setChecked(true);
+        break;
+    case 3:
+        ui->curTypeButton3->setChecked(true);
+        break;
+    case 4:
+        ui->curTypeButton4->setChecked(true);
+        break;
+    }
 
     ui->stateTable->verticalHeader()->setMinimumWidth(16);
     ui->stateTable->setColumnWidth(0,80);
@@ -77,6 +93,7 @@ void MainWindow::initChart(){
     allStateChart->layout()->setContentsMargins(0, 0, 0, 0);//设置外边界
     allStateChart->setMargins(QMargins(0, 0, 0, 0));//设置内边界
     allStateChart->setBackgroundRoundness(4);//设置背景区域圆角
+    allStateChart->legend()->setVisible(true);
 
     allStateAxisX=new QValueAxis();
     allStateAxisX->setRange(0,60);
@@ -100,8 +117,6 @@ void MainWindow::initChart(){
     allStateChart->addAxis(allStateAxisY, Qt::AlignLeft);
     allStateChart->addAxis(allStateAxisY2,Qt::AlignRight);
 
-    allStateChart->legend()->hide();
-
     ui->graphicsView->setChart(allStateChart);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
 
@@ -109,13 +124,12 @@ void MainWindow::initChart(){
     nowStateChart = new QChart();
     nowStateSeries = new QPieSeries();
 
-    nowStateChart->legend()->hide();//是否显示图例
     nowStateChart->addSeries(nowStateSeries);
     nowStateChart->setAnimationOptions(QChart::AllAnimations);//设置动画
-//    nowStateChart->createDefaultAxes();
     nowStateChart->layout()->setContentsMargins(0, 0, 0, 0);//设置外边界
     nowStateChart->setMargins(QMargins(0, 0, 0, 0));//设置内边界
     nowStateChart->setBackgroundRoundness(4);//设置背景区域圆角
+    nowStateChart->legend()->hide();//不显示图例
 
     ui->graphicsView_3->setChart(nowStateChart);
     ui->graphicsView_3->setRenderHint(QPainter::Antialiasing);//抗锯齿处理
@@ -135,7 +149,9 @@ void MainWindow::updateChart(){
     nowStateSeries->clear();
     std::vector<std::pair<int,int>> &statistics=controller.getStatistics();
     int sum=0,maxS=INT32_MIN;
-    for(std::pair<int,int> statistic:statistics) sum+=statistic.second;
+    for(std::pair<int,int> statistic:statistics){
+        sum+=statistic.second;
+    }
     QList<QPieSlice *> slices;
     for(std::pair<int,int> statistic:statistics){
         QPieSlice *slice=new QPieSlice(QString::number(statistic.first)+":"+QString::number(statistic.second)+
@@ -151,8 +167,8 @@ void MainWindow::updateChart(){
     nowStateSeries->append(slices);
     nowStateSeries->setLabelsVisible();
     nowStateChart->update();
-    //全状态
 
+    //全状态
     if(controller.getNowTime()==controller.getRunTime()){
         bool deleteMaxS=false;
         for(std::pair<int,int> statistic:statistics){
@@ -205,8 +221,7 @@ void MainWindow::updateChart(){
     if(controller.getNowTime()>60){
         allStateChart->axisX()->setRange(0,controller.getNowTime());
     }
-    nowStateChart->legend()->setVisible(true);
-    allStateChart->legend()->setVisible(true);
+
     allStateChart->update();
 }
 //鼠标事件
@@ -216,6 +231,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
     if(event->button()==Qt::LeftButton)
     {
         QPoint point1=point - ui->centralwidget->pos()- ui->mapShowFrame->pos();
+        mousePressState=1;
         clickEvent(point1);
         //窗口缩放
         winZoomType=0;
@@ -227,6 +243,17 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
             if (x>=0 && x<ui->widget_6->width() && y>=0 && y<ui->widget_6->height())
             {
                 winZoomType=1;
+                winZoomOriX=point.x();
+                winZoomOriY=point.y();
+                break;
+            }
+        }
+        case 2:{
+            QPoint point1=ui->widget_7->mapFromGlobal(QCursor().pos());
+            int x=point1.x(),y=point1.y();
+            if (x>=0 && x<ui->widget_7->width() && y>=0 && y<ui->widget_7->height())
+            {
+                winZoomType=2;
                 winZoomOriX=point.x();
                 winZoomOriY=point.y();
                 break;
@@ -252,6 +279,18 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
                 winZoomOriX=point.x();
                 winZoomOriY=point.y();
                 ui->frame->setMinimumWidth(ui->frame->minimumWidth()-relX);
+            }
+        }
+            break;
+        case 2:{
+            QPoint point=event->pos();
+            int relY=point.y()-winZoomOriY;
+            if(relY!=0 && !(relY<0 && ui->graphicsView_3->height()<=80)
+                    && !(relY>0 && ui->graphicsView->height()<=66)){
+                winZoomOriX=point.x();
+                winZoomOriY=point.y();
+                ui->graphicsView->setMinimumHeight(ui->graphicsView->height()-relY);
+                ui->graphicsView->setMaximumHeight(ui->graphicsView->minimumHeight());
             }
         }
             break;
@@ -281,7 +320,28 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event){
-    winZoomType=0;
+    if(event->button()==Qt::LeftButton)
+    {
+        winZoomType=0;
+        if(curType==4){
+            if(mousePressState!=0){
+                QPoint point1=event->pos() - ui->centralwidget->pos()- ui->mapShowFrame->pos();
+                mousePressState=2;
+                clickEvent(point1);
+            }
+        }else{
+            if(mousePressState!=0){
+                controller.setStartCellXY(-1,-1);
+                mousePressState=0;
+            }
+        }
+    }else if(event->button()==Qt::RightButton){
+        if(curType==4 && mousePressState!=0){
+            controller.setStartCellXY(-1,-1);
+            mousePressState=0;
+            ui->mapShowFrame->update();
+        }
+    }
 }
 
 void MainWindow::timerUpdate()
@@ -384,12 +444,28 @@ void MainWindow::clickEvent(QPoint &point)
         }else if(curType==3){
             controller.allClick();
             change=true;
+        }else if(curType==4){
+            if(mousePressState==1){
+                startCellX=cellX;
+                startCellY=cellY;
+                controller.setStartCellXY(startCellX,startCellY);
+                ui->mapShowFrame->update();
+                mousePressState=3;
+            }else if(mousePressState==2){
+                controller.clickCell(startCellX,startCellY,cellX,cellY);
+                controller.setStartCellXY(-1,-1);
+                change=true;
+            }
         }
         showState();
         if(change){
             ui->mapShowFrame->update();
             updateChart();
         }
+    }
+    if(mousePressState==2){
+        controller.setStartCellXY(-1,-1);
+        mousePressState=0;
     }
 }
 
@@ -464,6 +540,7 @@ void MainWindow::on_curTypeButton1_clicked(bool checked)
         ui->curTypeButton3->setChecked(false);
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::ArrowCursor);
+        ui->frame_2->setMinimumHeight(0);
     }
 }
 
@@ -477,6 +554,7 @@ void MainWindow::on_curTypeButton2_clicked(bool checked)
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::PointingHandCursor);
 //        ui->mapShowFrame->setCursor(QCursor(QPixmap(":/image/cur/resources/cur_set.ico"),-1,-1));
+        ui->frame_2->setMinimumHeight(41);
     }
 }
 
@@ -489,6 +567,7 @@ void MainWindow::on_curTypeButton3_clicked(bool checked)
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::OpenHandCursor);
+        ui->frame_2->setMinimumHeight(41);
     }
 }
 
@@ -501,6 +580,7 @@ void MainWindow::on_curTypeButton4_clicked(bool checked)
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton3->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::CrossCursor);
+        ui->frame_2->setMinimumHeight(41);
     }
 }
 

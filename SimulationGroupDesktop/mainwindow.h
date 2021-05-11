@@ -31,8 +31,10 @@ private:
     int curType=1;      //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
 
     //窗口缩放控制
-    int winZoomType=0;  //1右窗口
+    int winZoomType=0;  //1右窗口//2右下窗口
     int winZoomOriX,winZoomOriY;
+    int mousePressState=0;//0无操作1按下2释放3移动中
+    int startCellX,startCellY;
 
     //统计
     QChart *nowStateChart=nullptr;
