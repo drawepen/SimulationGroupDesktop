@@ -19,6 +19,7 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     setMouseTracking(true);  //激活鼠标追踪
     ui->centralwidget->setMouseTracking(true);
     ui->mapShowFrame->setMouseTracking(true);
+    ui->toolFrame->setMouseTracking(true);
 
     timer.stop();
     connect(&timer,&QTimer::timeout,this,&MainWindow::timerUpdate);
@@ -263,7 +264,6 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
         }
         }
     }
-    ui->mapShowFrame->update();
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
@@ -319,7 +319,6 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
         ui->cellYSpin->setValue(cellY);
     }
     //TODO去除重复update
-    printf("mouve>>%d\n",rand());fflush(stdout);
     ui->mapShowFrame->update();
 }
 

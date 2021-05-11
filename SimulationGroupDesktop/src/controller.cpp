@@ -16,9 +16,9 @@ int64_t currentTimeUs(){
 Controller::Controller()
 {
     setModelNeighborRule(model.getNeighborRuleType());
-//    model.addAction(new WlAction());
+    model.addAction(new WlAction());
 //    model.addAction(new VoteAction());
-    model.addAction(new SandAction());
+//    model.addAction(new SandAction());
 //    model.addAction(new FireAction());
 //    model.addAction(new IsolationAction());
 //    randomState();
