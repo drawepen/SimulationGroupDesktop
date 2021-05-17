@@ -59,7 +59,7 @@ void Controller::initState(){
     for(Cell &cell:model.cells){
         int value=operationValue;
         if(valueType==1){
-            value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
+            value=rand()%(abs(operationValue2-operationValue)+1)+min(operationValue,operationValue2);
         }
         cell.update(value,runTime);
     }
@@ -71,6 +71,25 @@ void Controller::operationOneCell(Cell *cell)
     int value=operationValue;
     if(valueType==1){
         value=rand()%abs(operationValue2-operationValue+1)+min(operationValue,operationValue2);
+    }else if(valueType==2){
+        double sum=0;
+        for(ProbValue pv:probValues){
+            sum+=pv.probability;
+        }
+        if(sum>0){
+            value=rand()%(abs(probValues.rbegin()->from-probValues.rbegin()->to)+1)+
+                    min(probValues.rbegin()->from,probValues.rbegin()->to);
+            double rd=rand()*sum/(RAND_MAX+1),now=0;
+            for(ProbValue pv:probValues){
+                now+=pv.probability;
+                if(now>rd){
+                    value=rand()%(abs(pv.from-pv.to)+1)+min(pv.from,pv.to);
+                    break;
+                }
+            }
+        }else{
+            return;//不做操作
+        }
     }
     if(operationType==0){
         cell->update(value,nowTime);
@@ -120,6 +139,7 @@ void Controller::allClick()
 int Controller::getState(int x,int y){
     return model.getState(x,y,nowTime);
 }
+
 //元胞邻居规则
 void Controller::setModelNeighborRule(int type)
 {
@@ -138,6 +158,7 @@ void Controller::setModelNeighborRule(int type)
         break;
     }
 }
+
 void Controller::clickNeighbor(int xSub,int ySub)
 {
     bool change=false;

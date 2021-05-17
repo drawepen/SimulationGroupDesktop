@@ -77,7 +77,13 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
         ui->stateMapTable->item(i,2)->setBackgroundColor(QColor(stateColors[i].r,stateColors[i].g,stateColors[i].b));
     }
 
+    //多agent设置
+    ui->moveableCheckBox->setChecked(controller->getCellMoveableSwitch());
+    ui->freeSpaceCheckBox->setChecked(controller->getCellSpaceSwitch());
+    ui->freeSpaceSpinBox->setValue(controller->getCellSpaceSize());
+
     ui->toolBox->setCurrentIndex(toolCurrentIndex);
+    textChange=false;
     update();
 }
 
@@ -140,7 +146,6 @@ void ModelSetting::paintEvent(QPaintEvent *)
         QPoint point=ui->showView->mapFromGlobal(QCursor().pos());
         int cellX=point.x()/cellWidth;
         int cellY=point.y()/cellHeight;
-        printf("p%d,%d\n",cellX,cellY);fflush(stdout);
         if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum &&
                 (cellX!=cellCoreX || cellY!=cellCoreY)){
             int mX=cellX*cellWidth,mY=cellY*cellHeight;
@@ -286,6 +291,7 @@ void ModelSetting::setActionTableText(int row,QString text){
     }
     codeEditCounts[row]=1;
     ui->actionTable->item(row,0)->setText(text);
+    textChange=true;
 }
 
 QString ModelSetting::actionTableText(int row){
@@ -349,21 +355,33 @@ void ModelSetting::on_stateMapTable_cellClicked(int row, int column)
         }
     }
 }
+//多agent
 
 //确认或取消
 void ModelSetting::on_buttonBox_accepted()
 {
     bool change=false;
-    if(ui->actionTable->rowCount()>0){//TODO正确的判断是否修改
+    if(textChange){
         std::vector<std::string> codes;
         for(int i=0,len=ui->actionTable->rowCount();i<len;++i){
-            codes.push_back(actionTableText(i).toStdString());
+            QString text=actionTableText(i);
+            if(text!=""){
+                codes.push_back(text.toStdString());
+            }
         }
-        controller->setCellAction(codes);
+        if(codes.size()>0){
+            controller->setCellAction(codes);
+        }
     }
     if(controller->getCellColNum()!=cellColNum || controller->getCellRowNum()!=cellRowNum){
         controller->setCellNum({cellRowNum,cellColNum});
         change=true;
+    }
+    //多agent
+    controller->setCellMoveableSwitch(ui->moveableCheckBox->checkState()==Qt::Checked);
+    controller->setCellSpaceSwitch(ui->freeSpaceCheckBox->checkState()==Qt::Checked);
+    if(controller->getCellSpaceSize()!=ui->freeSpaceSpinBox->value()){
+        controller->setCellSpaceSize(ui->freeSpaceSpinBox->value());
     }
 
     //元胞映射设置
@@ -377,12 +395,12 @@ void ModelSetting::on_buttonBox_accepted()
     }
     controller->setState2Color(state2Color);
 
-    //元胞交互设置
-    controller->setModelNeighborRule(ui->comboBox->currentIndex());
-
     if(change){
         controller->init();
         mainWindow->reShowMap();
+    }else{
+        //元胞交互设置
+        controller->setModelNeighborRule(ui->comboBox->currentIndex());
     }
 }
 

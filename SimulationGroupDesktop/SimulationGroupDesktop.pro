@@ -27,7 +27,8 @@ SOURCES += \
     src/data/rule/voteaction.cpp \
     src/data/rule/wlaction.cpp \
     src/tool/ShellTool.cpp \
-    src/tool/expanalysis.cpp
+    src/tool/expanalysis.cpp \
+    statisticswindow.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -46,12 +47,14 @@ HEADERS += \
     src/data/rule/voteaction.h \
     src/data/rule/wlaction.h \
     src/tool/ShellTool.h \
-    src/tool/expanalysis.h
+    src/tool/expanalysis.h \
+    statisticswindow.h
 
 FORMS += \
     CodeEditor.ui \
     mainwindow.ui \
-    modelsetting.ui
+    modelsetting.ui \
+    statisticswindow.ui
 
 TRANSLATIONS += \
     SimulationGroupDesktop_zh_CN.ts

@@ -2,7 +2,7 @@
 #define SHELLTOOL_H
 #include <string>
 #include <QLibrary>
-typedef int (* FUN)(int*,int,int);
+typedef int (* FUN)(int*,int,void*,void*,int);
 class ShellTool
 {
 public:

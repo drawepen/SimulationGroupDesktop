@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "src/controller.h"
+#include "statisticswindow.h"
 #include <QMainWindow>
 #include <QTimer>
 #include <QtCharts>
@@ -29,6 +30,10 @@ private:
     //操作
     int cellX=0,cellY=0;
     int curType=1;      //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
+    int oldValueType=0;
+    QString oldTableText;
+    int tableChanging=0;
+    int operationWinHeight=41;
 
     //窗口缩放控制
     int winZoomType=0;  //1右窗口//2右下窗口
@@ -44,6 +49,7 @@ private:
     QValueAxis *allStateAxisX=nullptr,*allStateAxisY=nullptr,*allStateAxisY2=nullptr;
     int maxStatistic=INT32_MIN;
     int specialEffType=0;
+    StatisticsWindow *statisticswindow=nullptr;
 
 protected:
     void paintEvent(QPaintEvent *event);
@@ -63,6 +69,8 @@ private slots:
     void on_exportMapImage_triggered();
     void on_exportNowStaImage_triggered();
     void on_exportAllStaImage_triggered();
+    void on_seniorOperationSwitch_triggered();
+    void on_action_rs_triggered();
 
     void on_operationTypeCombo_activated(int index);
 
@@ -85,6 +93,14 @@ private slots:
     void on_curTypeButton4_clicked(bool checked);
 
     void on_resetButton_clicked();
+
+    void on_addOperationButton_clicked();
+
+    void on_seniorOperationTable_itemChanged(QTableWidgetItem *item);
+
+    void on_seniorOperationTable_itemSelectionChanged();
+
+    void on_seniorOperationTable_cellClicked(int row, int column);
 
 private:
     void updateProgress();

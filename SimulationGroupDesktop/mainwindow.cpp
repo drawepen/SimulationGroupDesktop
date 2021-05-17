@@ -36,6 +36,11 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     ui->nextFrameButton->setToolTip("下一帧");
     ui->lastFrameButton->setToolTip("上一帧");
     ui->resetButton->setToolTip("重置");
+    ui->curTypeButton1->setToolTip("无操作");
+    ui->curTypeButton2->setToolTip("单元胞");
+    ui->curTypeButton3->setToolTip("全区");
+    ui->curTypeButton4->setToolTip("选区");
+    ui->speedSlider->setToolTip("速度调控");
 
     QIcon icon1,icon2,icon3,icon4;
     icon1.addFile(tr(":/image/cur/resources/resizeApi1.ico"));
@@ -66,7 +71,6 @@ MainWindow::MainWindow(char *path,QWidget *parent)
         break;
     }
 
-
     ui->stateTable->verticalHeader()->setMinimumWidth(16);
     ui->stateTable->setColumnWidth(0,80);
     ui->stateTable->setColumnWidth(1,ui->stateTable->width()-96-2);
@@ -75,6 +79,16 @@ MainWindow::MainWindow(char *path,QWidget *parent)
     icon.addFile(tr(":/image/button/resources/reset.png"));
     ui->resetButton->setIcon(icon);
     ui->resetButton->setIconSize(ui->resetButton->size()-QSize(4,4));
+
+    ui->label_6->setVisible(false);
+    ui->label_7->setVisible(false);
+    ui->cpuUseLabel->setVisible(false);
+    ui->ramUseLabel->setVisible(false);
+
+    oldValueType=controller.getValueType();
+    ui->seniorOperationTable->setVisible(false);
+    ui->addOperationButton->setVisible(false);
+    on_addOperationButton_clicked();
 
     initChart();
     updateChart();
@@ -557,7 +571,7 @@ void MainWindow::on_curTypeButton2_clicked(bool checked)
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::PointingHandCursor);
 //        ui->mapShowFrame->setCursor(QCursor(QPixmap(":/image/cur/resources/cur_set.ico"),-1,-1));
-        ui->frame_2->setMinimumHeight(41);
+        ui->frame_2->setMinimumHeight(operationWinHeight);
     }
 }
 
@@ -570,7 +584,7 @@ void MainWindow::on_curTypeButton3_clicked(bool checked)
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton4->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::OpenHandCursor);
-        ui->frame_2->setMinimumHeight(41);
+        ui->frame_2->setMinimumHeight(operationWinHeight);
     }
 }
 
@@ -583,7 +597,7 @@ void MainWindow::on_curTypeButton4_clicked(bool checked)
         ui->curTypeButton2->setChecked(false);
         ui->curTypeButton3->setChecked(false);
         ui->mapShowFrame->setCursor(Qt::CrossCursor);
-        ui->frame_2->setMinimumHeight(41);
+        ui->frame_2->setMinimumHeight(operationWinHeight);
     }
 }
 
@@ -611,8 +625,8 @@ void MainWindow::on_modelSet_triggered()
 
     ModelSetting *ms=new ModelSetting(nullptr,this);
     ms->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
+    ms->setAttribute(Qt::WA_DeleteOnClose,true);
     ms->show();
-
 }
 
 void MainWindow::on_exportMapImage_triggered()
@@ -656,8 +670,43 @@ void MainWindow::on_useDoc_triggered()
     //...
 }
 
-//监控
+void MainWindow::on_seniorOperationSwitch_triggered()
+{
+    if(controller.getValueType()==2){
+        controller.setValueType(oldValueType);
+        ui->seniorOperationSwitch->setText("高级操作：关");
+        operationWinHeight=41;
+        ui->frame_2->setMinimumHeight(operationWinHeight);
+        ui->frame_2->setMaximumHeight(operationWinHeight);
+        ui->graphicsView->setMinimumHeight(ui->graphicsView->minimumHeight()+60);
+        ui->graphicsView->setMaximumHeight(ui->graphicsView->minimumHeight());
+        ui->seniorOperationTable->setVisible(false);
+        ui->addOperationButton->setVisible(false);
+    }else{
+        oldValueType=controller.getValueType();
+        controller.setValueType(2);
+        ui->seniorOperationSwitch->setText("高级操作：开");
+        operationWinHeight+=60;
+        ui->frame_2->setMinimumHeight(operationWinHeight);
+        ui->frame_2->setMaximumHeight(operationWinHeight);
+        ui->graphicsView->setMinimumHeight(ui->graphicsView->minimumHeight()-60);
+        ui->graphicsView->setMaximumHeight(ui->graphicsView->minimumHeight());
+        ui->seniorOperationTable->setVisible(true);
+        ui->addOperationButton->setVisible(true);
+    }
+//    ui->seniorOperationSwitch->setVisible(true);
+    ui->menu_3->setVisible(true);
+}
 
+void MainWindow::on_action_rs_triggered(){
+    if(statisticswindow==nullptr){
+        statisticswindow=new StatisticsWindow();
+    }
+    statisticswindow->show();
+    statisticswindow->raise();
+}
+
+//监控
 void MainWindow::monitorDyn()
 {
     ui->timeSpend->setText(QString().setNum(controller.getTimeSpend()*1.0/1000,'f',3));
@@ -673,4 +722,78 @@ void MainWindow::monitorFix()
 {
 //    ui->ramUseLabel->setText(QString::number(getWinMemUsage()/1000000)+"MB,"+"%");
 //    ui->cpuUseLabel->setText(QString::number(getWinCpuUsage())+"%");
+}
+
+void MainWindow::on_addOperationButton_clicked()
+{
+    int row = ui->seniorOperationTable->rowCount();
+    ui->seniorOperationTable->insertRow(row);
+
+    QTableWidgetItem *item0=new QTableWidgetItem("0");
+    QTableWidgetItem *item1=new QTableWidgetItem("0");
+    QTableWidgetItem *item2=new QTableWidgetItem("1");
+    QTableWidgetItem *item3=new QTableWidgetItem("删除");
+    item0->setTextAlignment(Qt::AlignCenter);
+    item1->setTextAlignment(Qt::AlignCenter);
+    item2->setTextAlignment(Qt::AlignCenter);
+    item3->setTextAlignment(Qt::AlignCenter);
+    item3->setForeground(QBrush(Qt::red));
+    item3->setFlags(item0->flags() & (~Qt::ItemIsEditable));
+
+    ui->seniorOperationTable->blockSignals(true);
+    tableChanging=1;
+    ui->seniorOperationTable->setItem(row,0,item0);//没有默认QTableWidgetItem，需要先添加
+    ui->seniorOperationTable->setItem(row,1,item1);
+    tableChanging=0;
+    ui->seniorOperationTable->setItem(row,2,item2);
+    ui->seniorOperationTable->setItem(row,3,item3);
+    ui->seniorOperationTable->blockSignals(false);
+    on_seniorOperationTable_itemChanged(item2);
+}
+
+void MainWindow::on_seniorOperationTable_itemChanged(QTableWidgetItem *item)
+{
+    if(item==NULL){
+        return;
+    }
+    if(item->column()==3){
+        return;
+    }else if(item->column()==2){
+        QRegExp reg(QString("([0-9]\\.\\d+)|([1-9]\\d+\\.\\d+)|([0-9])|([1-9][0-9]+)"));
+        if(!reg.exactMatch(item->text())){
+            item->setText(oldTableText);
+            return;
+        }
+    }else{
+        QRegExp reg(QString("(-?[1-9][0-9]+)|(-?[0-9])"));
+        if(!reg.exactMatch(item->text())){
+            item->setText(oldTableText);
+            return;
+        }
+    }
+    if(tableChanging==0){
+        int row=item->row();
+        QString text0=ui->seniorOperationTable->item(row,0)->text();
+        QString text1=ui->seniorOperationTable->item(row,1)->text();
+        QString text2=ui->seniorOperationTable->item(row,2)->text();
+        controller.setProbValues(row,text0.toInt(),text1.toInt(),text2.toDouble());
+    }
+}
+
+void MainWindow::on_seniorOperationTable_itemSelectionChanged()
+{
+    if(ui->seniorOperationTable->currentItem()!=NULL){
+        oldTableText=ui->seniorOperationTable->currentItem()->text();
+    }
+}
+
+void MainWindow::on_seniorOperationTable_cellClicked(int row, int column)
+{
+    if(column==3){
+        QMessageBox::StandardButton btn = QMessageBox::question(this, "提示", "确定要删除吗?", QMessageBox::Yes|QMessageBox::No);
+        if (btn == QMessageBox::Yes) {
+            ui->seniorOperationTable->removeRow(row);
+            controller.removeProbValues(row);
+        }
+    }
 }

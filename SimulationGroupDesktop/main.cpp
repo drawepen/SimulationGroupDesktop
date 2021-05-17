@@ -1,3 +1,6 @@
+#ifndef _DEBUG
+#define _SECURE_SCL 0
+#endif
 #include "mainwindow.h"
 #include <QApplication>
 #include <QStyleFactory>

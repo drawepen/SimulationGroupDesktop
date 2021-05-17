@@ -5,6 +5,11 @@
 #include <string>
 #include "data/model.h"
 
+struct ProbValue{
+    int from,to;
+    double probability;
+};
+
 class Controller
 {
 public:
@@ -98,6 +103,9 @@ public:
     void setOperationType(int value){
         this->operationType=value;
     }
+    int getValueType(){
+        return valueType;
+    }
     void setValueType(int value){
         this->valueType=value;
     }
@@ -143,6 +151,37 @@ public:
     StateColor getDefColor(){
         return model.getDefColor();
     }
+    int getCellMoveableSwitch(){
+        return model.getCellMoveableSwitch();
+    }
+    void setCellMoveableSwitch(int cellMoveableSwitch){
+        model.setCellMoveableSwitch(cellMoveableSwitch);
+    }
+    int getCellSpaceSwitch(){
+        return model.getCellSpaceSwitch();
+    }
+    int setCellSpaceSwitch(int cellSpaceSwitch){
+        model.setCellSpaceSwitch(cellSpaceSwitch);
+    }
+    int getCellSpaceSize(){
+        return model.getCellSpaceSize();
+    }
+    void setCellSpaceSize(int cellSpaceSize){
+        model.setCellSpaceSize(cellSpaceSize);
+    }
+    void setProbValues(int index,int from,int to,double probability){
+        while(index>=probValues.size()){
+            probValues.emplace_back();
+        }
+        probValues[index].from=from;
+        probValues[index].to=to;
+        probValues[index].probability=probability;
+    }
+    void removeProbValues(int index){
+        if(index<probValues.size()){
+            probValues.erase(probValues.begin()+index);
+        }
+    }
 private:
     //模型
     Model model;
@@ -157,7 +196,8 @@ private:
     int operationType=0;    //0设值1累加值
     int operationValue=0;
     int operationValue2=1;
-    int valueType=0;//0固定值1随机值
+    std::vector<ProbValue> probValues;
+    int valueType=0;//0固定值1随机值2列表概率随机
     int curType=2;  //光标类型:1普通,2单元胞设值,3全元胞设值,4缩放地图
     int startCellX=-1,startCellY=-1;
     //模型设置

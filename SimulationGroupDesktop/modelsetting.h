@@ -52,6 +52,7 @@ private:
     Ui::ModelSetting *ui;
     MainWindow *mainWindow;
     Controller *controller;
+    bool textChange;
 
     std::vector<QSpinBox*> stateMapSpinBoxs;
     std::vector<QComboBox*> stateMapComboBoxs;

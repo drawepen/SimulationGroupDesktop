@@ -2,14 +2,17 @@
 #define ACTIONLIB_H
 
 #include "ActionLib_global.h"
-//传参len=cell+邻居数 ncells.size=2*len(上一时刻状态值+当前状态值)
-//返回int 1是0否修改邻居状态 ncells[len~2*len-1]=[cell,邻居]修改后值
-extern "C" ACTIONLIB_EXPORT int execute(int *ncells,int len,int nowTime);
+//传参len=cell+邻居数 ncells.size=3*len+2(上一时刻状态值len+当前状态值len+元胞及邻居id+自由空间大小1+公共空间大小1)
+//传参privateSpace自由空间 publicSpace公共空间
+//返回int (2进制下)1是0否修改邻居状态 | 10移动00不移动位置
+//返回修改数组ncells[0]=[交互位置的邻居下标(非id，从0开始)] ncells[len~2*len-1]=[cell新状态,邻居新状态]
+//TODO 传参历史状态值
+extern "C" ACTIONLIB_EXPORT int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime);
 
 #endif // ACTIONLIB_H
 /*
-//威廉生命游戏
-int execute(int *ncells,int len,int nowTime){
+//康威生命游戏
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     int count=0;
     for(int i=1;i<len;++i){
         if(ncells[i]>0){
@@ -24,7 +27,7 @@ int execute(int *ncells,int len,int nowTime){
     return 0;
 }
 //沙堆模型
-int execute(int *ncells,int len,int nowTime){
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     int nowState=ncells[len];
     if(nowState!=-1){
         nowState+=ncells[0];
@@ -49,7 +52,7 @@ int execute(int *ncells,int len,int nowTime){
     }
 }
 //投票模型
-int execute(int *ncells,int len,int nowTime){
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     if(len<=1){
         return 0;
     }
@@ -63,7 +66,7 @@ int execute(int *ncells,int len,int nowTime){
     return 0;
 }
 //森林火灾模型
-int execute(int *ncells,int len,int nowTime){
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     //-100000着火;<=0空地;>0树木
     int state=ncells[0];
     int newState=state;
@@ -83,7 +86,7 @@ int execute(int *ncells,int len,int nowTime){
 }
 //谢林顿隔离模型
 //优先搬迁
-int execute(int *ncells,int len,int nowTime){
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     //<0空地;1类型1;2类型2
     if(len<=1 || ncells[0]<=0){
         if(ncells[len]<=0){
@@ -111,8 +114,8 @@ int execute(int *ncells,int len,int nowTime){
     return 1;
 }
 //随机搬迁
-int execute(int *ncells,int len,int nowTime){
-    //<0=空地;1类型1;2类型2
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    //<=0空地;1类型1;2类型2
     if(len<=1 || ncells[0]<=0){
         if(ncells[len]<=0){
             ncells[len]=0;
@@ -151,4 +154,6 @@ int execute(int *ncells,int len,int nowTime){
     }
     return 1;
 }
+//糖域模型
+
 */

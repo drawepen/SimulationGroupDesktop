@@ -80,6 +80,27 @@ public:
         map.setHeightNum(num.first);
         map.setWidthNum(num.second);
     }
+    int getCellMoveableSwitch(){
+        return cellMoveableSwitch;
+    }
+    void setCellMoveableSwitch(int cellMoveableSwitch){
+        this->cellMoveableSwitch=cellMoveableSwitch;
+    }
+    int getCellSpaceSwitch(){
+        return cellSpaceSwitch;
+    }
+    void setCellSpaceSwitch(int cellSpaceSwitch){
+        this->cellSpaceSwitch=cellSpaceSwitch;
+    }
+    int getCellSpaceSize(){
+        return cellSpaceSize;
+    }
+    int setCellSpaceSize(int cellSpaceSize){
+        this->cellSpaceSize=cellSpaceSize;
+        for(Cell &cell:cells){
+            cell.setSpaceSize(cellSpaceSize);
+        }
+    }
     //统计
     std::vector<std::pair<int,int>> &getStatistics(int nowTime){
         return statisticStates[nowTime];
@@ -107,6 +128,10 @@ private:
     std::vector<std::string> actionCodes;
     //统计状态值[每帧[<状态值,个数>]]
     std::vector<std::vector<std::pair<int,int>>> statisticStates;
+    //多agent参数
+    int cellMoveableSwitch=1;
+    int cellSpaceSwitch=1;
+    int cellSpaceSize=0;
 
 private:
     void updateNeighbor();

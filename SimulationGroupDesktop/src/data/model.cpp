@@ -17,11 +17,18 @@ void Model::updateCellAndMap()
     cells.clear();
     for(int i=0,hLen=map.getRowNum();i<hLen;++i){
         for(int j=0,wLen=map.getColNum();j<wLen;++j){
-            cells.emplace_back();
+            cells.emplace_back(cellSpaceSize);
             cells.rbegin()->id=cellId++;
         }
     }
+//    printf("run-re0-1-3,%d\n",cells.size());fflush(stdout);
     //cells大小不再变化才能使用指针，否则地址会变
+    if(cellSpaceSize>0){
+        for(Cell &cell:cells){
+//            cell.setSpaceSize(cellSpaceSize);////???未解之谜 Release模式下,调用函数就报错，函数能正常执行，但出函数前报错
+            cell.space=malloc(cellSpaceSize);
+        }
+    }
     int index=0;
     map.cells.clear();
     for(int i=0,hLen=map.getRowNum();i<hLen;++i){
@@ -44,8 +51,10 @@ void Model::update(int nowTime)
             action->execute(cell,nowTime);
         }
         //改变元胞位置
-        if(map.cells[cell.mapY][cell.mapX]->id != cell.id){
+        Cell *nc;
+        if(cellMoveableSwitch && (nc=map.cells[cell.mapY][cell.mapX])->id != cell.id){
             positionChang=true;
+            map.cells[nc->mapY][nc->mapX]=nc;
             map.cells[cell.mapY][cell.mapX]=&cell;
         }
     }
@@ -77,7 +86,6 @@ void Model::updateNeighbor()
         }
     }
 }
-
 
 void Model::statistics(int nowTime){
     //统计

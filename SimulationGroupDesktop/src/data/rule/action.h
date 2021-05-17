@@ -10,6 +10,7 @@ public:
     virtual void execute(Cell &cell,int nowTime);
 public:
     FUN libExecute;
+    int cellMoveableSwitch=1;
 };
 
 #endif // ACTION_H
