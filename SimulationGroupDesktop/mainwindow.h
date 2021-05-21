@@ -71,6 +71,8 @@ private slots:
     void on_exportAllStaImage_triggered();
     void on_seniorOperationSwitch_triggered();
     void on_action_rs_triggered();
+    void on_modelnew_triggered();
+    void on_actionModelSave_triggered();
 
     void on_operationTypeCombo_activated(int index);
 

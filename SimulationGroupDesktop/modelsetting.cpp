@@ -198,7 +198,6 @@ void ModelSetting::mouseDoubleClickEvent(QMouseEvent *e){
         QPoint point=ui->showView->mapFromGlobal(QCursor().pos());
         int cellX=point.x()/cellWidth;
         int cellY=point.y()/cellHeight;
-        printf("%d,%d\n",cellX,cellY);fflush(stdout);
         if(point.x()>=0 && cellX<cellColNum && point.y()>=0 && cellY<cellRowNum &&
                 (cellX!=cellCoreX || cellY!=cellCoreY)){
             controller->clickNeighbor(cellX-cellCoreX,cellY-cellCoreY);
@@ -394,13 +393,13 @@ void ModelSetting::on_buttonBox_accepted()
                 color.red(),color.green(),color.blue(),stateMapComboBoxs[i]->currentIndex()));
     }
     controller->setState2Color(state2Color);
-
+    //元胞交互设置
+    if(ui->comboBox->currentIndex()==3||controller->getModelNeighborRuleType()!=ui->comboBox->currentIndex()){
+        controller->setModelNeighborRule(ui->comboBox->currentIndex());
+    }
     if(change){
         controller->init();
         mainWindow->reShowMap();
-    }else{
-        //元胞交互设置
-        controller->setModelNeighborRule(ui->comboBox->currentIndex());
     }
 }
 

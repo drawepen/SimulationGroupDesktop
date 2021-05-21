@@ -1,9 +1,13 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include "data/model.h"
 #include <stdint.h>
 #include <string>
-#include "data/model.h"
+//sqlite
+#include <qdebug.h>
+#include <QSqlDatabase>
+
 
 struct ProbValue{
     int from,to;
@@ -14,8 +18,17 @@ class Controller
 {
 public:
     Controller();
+    ~Controller();
+    //数据库
+    QSqlDatabase openSql();
+    void closeSql(QSqlDatabase dataBase);
     //设置model
     void setCellAction(std::vector<std::string> codes);
+    int checkExisModel(std::string name);
+    void saveModel(std::string name);
+    void newModel(std::string name);
+    bool isNewModel();
+    std::vector<std::string> modelsFromDb();
     //执行流程
     bool start();
     bool suspend();//暂停或继续
@@ -76,6 +89,11 @@ public:
     void setCurType(int curType){
         this->curType=curType;
     }
+    bool getIsNewM(){
+        bool re=isNewM;
+        isNewM=false;
+        return re;
+    }
     //元胞邻居规则设置
     void initTempNeighborRule(){
         tempNeighborRule=model.getNeighborRule();
@@ -130,6 +148,9 @@ public:
     }
 
     //模型参数设置
+    std::string getModelName(){
+        return model.getName();
+    }
     std::vector<std::pair<int,int>>& getNowModelNeighborRule(){
         return model.getNeighborRule();
     }
@@ -183,6 +204,7 @@ public:
         }
     }
 private:
+    QSqlDatabase dataBase;
     //模型
     Model model;
     //执行流程的参数
@@ -191,6 +213,7 @@ private:
     int interval=100000;    //两帧开始执行时间点的间隔时间(us)
     int speed=10;           //预计每秒执行多少帧
     vector<int64_t> realTimeSpend;  //当前帧执行完花费的实际时间(us)
+    bool isNewM;
     //操作
     int mouseType=0;
     int operationType=0;    //0设值1累加值
@@ -209,6 +232,9 @@ private:
 private:
     void updateCellAndMap();
     void operationOneCell(Cell *cell);
+    std::string modelSerialize();
+    void modelDeserialization(QSqlQuery &sqlQuery);
+    void emptyModel();
 };
 
 #endif // CONTROLLER_H

@@ -1,5 +1,6 @@
 QT       += core gui
 QT      += charts
+QT      += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -13,6 +14,7 @@ SOURCES += \
     mainwindow.cpp \
     CodeEditor.cpp \
     main.cpp \
+    modelexamples.cpp \
     modelsetting.cpp \
     showframe.cpp \
     showview.cpp \
@@ -33,6 +35,7 @@ SOURCES += \
 HEADERS += \
     mainwindow.h \
     CodeEditor.h \
+    modelexamples.h \
     modelsetting.h \
     showframe.h \
     showview.h \
@@ -53,6 +56,7 @@ HEADERS += \
 FORMS += \
     CodeEditor.ui \
     mainwindow.ui \
+    modelexamples.ui \
     modelsetting.ui \
     statisticswindow.ui
 

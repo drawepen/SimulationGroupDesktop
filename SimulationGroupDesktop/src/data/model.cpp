@@ -4,11 +4,28 @@
 
 Model::Model()
 {
+    initEmpty();
+}
+
+void Model::initEmpty(){
     srand(time(NULL));
+    cellMoveableSwitch=1;
+    cellSpaceSwitch=1;
+    cellSpaceSize=0;
+    neighborRuleType=1;
+    statisticStates.clear();
+    state2Color.clear();
+    name.clear();
+    actions.clear();
+    relCoos.clear();
+    state2Color.clear();
+    actionCodes.clear();
+    statisticStates.clear();
+
     updateCellAndMap();
     defColor=StateColor(0,0,255,255,255,0);
     state2Color.push_back(defColor);
-    state2Color.push_back(StateColor(1,INT32_MAX,0,0,0,0));//TODO删除
+    state2Color.push_back(StateColor(1,INT32_MAX,0,0,0,0));
 }
 
 void Model::updateCellAndMap()
@@ -21,7 +38,6 @@ void Model::updateCellAndMap()
             cells.rbegin()->id=cellId++;
         }
     }
-//    printf("run-re0-1-3,%d\n",cells.size());fflush(stdout);
     //cells大小不再变化才能使用指针，否则地址会变
     if(cellSpaceSize>0){
         for(Cell &cell:cells){

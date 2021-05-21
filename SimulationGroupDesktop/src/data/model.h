@@ -18,6 +18,7 @@ class Model
 {
 public:
     Model();
+    void initEmpty();
     //执行
     void update(int nowTime);
     void statistics(int nowTime);
@@ -28,9 +29,9 @@ public:
 
 public:
     ~Model(){
-        for(Action *action:actions){
-            delete action;
-        }
+//        for(Action *action:actions){//TODO待释放内存，但Qt中对析构和vector相关常有bug
+//            delete action;
+//        }
     }
     void addAction(Action* action){
         actions.push_back(action);
@@ -73,6 +74,12 @@ public:
        this->actionCodes=actionCodes;
     }
     //其他参数设置
+    std::string getName(){
+        return name;
+    }
+    void setName(std::string name){
+        this->name=name;
+    }
     std::pair<int,int> getCellNum(){
         return {map.getRowNum(),map.getColNum()};
     }
@@ -120,18 +127,19 @@ public:
                                                {1,-1}, {2,-1}, {-2,0},{-1,0},{1,0},{2,0},{-2,1},{-1,1},
                                                {0,1},  {1,1},  {2,1}, {-2,2},{-1,2},{0,2},{1,2},{2,2}};//扩展摩尔型
 private:
+    std::string name;
     std::vector<Action*> actions;
     std::vector<std::pair<int,int>> relCoos;    //邻居规则
-    int neighborRuleType=1;
+    int neighborRuleType;
     std::vector<StateColor> state2Color;   //元胞映射
     StateColor defColor;
     std::vector<std::string> actionCodes;
     //统计状态值[每帧[<状态值,个数>]]
     std::vector<std::vector<std::pair<int,int>>> statisticStates;
     //多agent参数
-    int cellMoveableSwitch=1;
-    int cellSpaceSwitch=1;
-    int cellSpaceSize=0;
+    int cellMoveableSwitch;
+    int cellSpaceSwitch;
+    int cellSpaceSize;
 
 private:
     void updateNeighbor();

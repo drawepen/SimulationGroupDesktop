@@ -98,7 +98,6 @@ std::string ShellTool::buildDll2(std::string code,std::string pathName,std::stri
     FILE *fp;
     if(path.size()>0){
         sprintf(cs,"mkdir -p %s",path.c_str());
-        printf("%s\n",cs);fflush(stdout);
         system(cs);
     }
     //生成源文件

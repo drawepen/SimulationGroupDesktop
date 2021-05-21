@@ -1,13 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "modelsetting.h"
+#include "modelexamples.h"
+#include "src/data/model.h" //???引用头文件报错找不到方法[已解决：makefile文件中被引用的文件要在前声明]
 #include <math.h>
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QPixmap>
-#include "src/data/model.h" //???引用头文件报错找不到方法[已解决：makefile文件中被引用的文件要在前声明]
-//using namespace QtCharts;
 
 MainWindow::MainWindow(char *path,QWidget *parent)
     : QMainWindow(parent)
@@ -704,6 +704,28 @@ void MainWindow::on_action_rs_triggered(){
     }
     statisticswindow->show();
     statisticswindow->raise();
+}
+
+void MainWindow::on_modelnew_triggered(){
+    ModelExamples *me=new ModelExamples(nullptr,this);
+    me->setWindowModality(Qt::ApplicationModal);//在关闭当前窗口前无法操作其他窗口
+    me->setAttribute(Qt::WA_DeleteOnClose,true);
+    me->show();
+}
+
+void MainWindow::on_actionModelSave_triggered(){
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("保存模型"),tr("请输入模型名称"), QLineEdit::Normal,controller.getModelName().c_str(), &ok);
+    if (ok && !text.isEmpty())
+    {
+        if(controller.checkExisModel(text.toStdString())!=-1){
+            QMessageBox::StandardButton btn = QMessageBox::question(this, "提示", "模型以存在，是否覆盖?", QMessageBox::Yes|QMessageBox::No);
+            if (btn != QMessageBox::Yes) {
+                return;
+            }
+        }
+        controller.saveModel(text.toStdString());
+    }
 }
 
 //监控
