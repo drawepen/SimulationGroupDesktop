@@ -100,10 +100,10 @@ int executeD(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTim
 //~DEBUG
 Action::Action()
 {
-
+    publicSpace=malloc(publicSpaceSize);
+    ncells=(int*)malloc(sizeof(int)*4096);
 }
-int *ncells=(int*)malloc(sizeof(int)*4096);
-void *publicSpace=malloc(1024*10240);
+
 void Action::execute(Cell &cell,int nowTime)
 {
     int lastTime=nowTime-1;
@@ -123,14 +123,15 @@ void Action::execute(Cell &cell,int nowTime)
     }
     ncells[index++]=cell.spaceSize;
     ncells[index++]=1024*10240;
+    ncells[index++]=cell.count;
 //    for(int i=0;i<len;++i){
 //        printf("%d ",states[i]);
 //    }printf("|");
 //    for(int i=0;i<len;++i){
 //        printf("%d ",states[i+len]);
 //    }printf("|");
-//    int type=libExecute(ncells,len,cell.space,publicSpace,nowTime);
-    int type=executeD(ncells,len,cell.space,publicSpace,nowTime);
+    int type=libExecute(ncells,len,cell.space,publicSpace,nowTime);
+//    int type=executeD(ncells,len,cell.space,publicSpace,nowTime);
 //    for(int i=0;i<len;++i){
 //        printf("%d ",states[i]);
 //    }printf("\n");fflush(stdout);

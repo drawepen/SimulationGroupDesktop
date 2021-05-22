@@ -1,6 +1,7 @@
 #include "model.h"
 #include <cstdlib>
 #include <ctime>
+#include <string.h>
 
 Model::Model()
 {
@@ -43,6 +44,7 @@ void Model::updateCellAndMap()
         for(Cell &cell:cells){
 //            cell.setSpaceSize(cellSpaceSize);////???未解之谜 Release模式下,调用函数就报错，函数能正常执行，但出函数前报错
             cell.space=malloc(cellSpaceSize);
+            cell.count=map.getRowNum()*map.getColNum();
         }
     }
     int index=0;
@@ -61,6 +63,11 @@ void Model::updateCellAndMap()
 
 void Model::update(int nowTime)
 {
+    if(nowTime<=1){
+        for(Action *action:actions){
+            memset(action->publicSpace,0,action->publicSpaceSize);
+        }
+    }
     bool positionChang=false;
     for(Cell &cell:cells){
         for(Action *action:actions){

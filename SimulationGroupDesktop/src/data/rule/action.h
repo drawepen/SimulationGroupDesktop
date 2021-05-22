@@ -11,6 +11,9 @@ public:
 public:
     FUN libExecute;
     int cellMoveableSwitch=1;
+    void *publicSpace;
+    int *ncells;
+    int publicSpaceSize=1024*10240;
 };
 
 #endif // ACTION_H

@@ -47,8 +47,8 @@ ModelSetting::ModelSetting(QWidget *parent,MainWindow *mainWindow) :
 
     std::vector<StateColor> &stateColors = controller->getState2Color();
     if(stateColors.size()>0){
-        ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
-                                         ui->addStateMapButton->width(),ui->addStateMapButton->height());
+//        ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
+//                                         ui->addStateMapButton->width(),ui->addStateMapButton->height());
         ui->stateMapTable->insertRow(0);
         QTableWidgetItem *item0=new QTableWidgetItem("默认");
         item0->setTextAlignment(Qt::AlignCenter);
@@ -302,8 +302,8 @@ QString ModelSetting::actionTableText(int row){
 
 void ModelSetting::on_addStateMapButton_clicked()
 {
-    ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
-                                     ui->addStateMapButton->width(),ui->addStateMapButton->height());
+//    ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()+30,
+//                                     ui->addStateMapButton->width(),ui->addStateMapButton->height());
     int row=ui->stateMapTable->rowCount();
     ui->stateMapTable->insertRow(row);
     QWidget *widget=new QWidget();
@@ -349,8 +349,9 @@ void ModelSetting::on_stateMapTable_cellClicked(int row, int column)
         QMessageBox::StandardButton btn = QMessageBox::question(this, "提示", "确定要删除吗?", QMessageBox::Yes|QMessageBox::No);
         if (btn == QMessageBox::Yes) {
             ui->stateMapTable->removeRow(row);
-            ui->addStateMapButton->setGeometry(ui->addStateMapButton->x(),ui->addStateMapButton->y()-30,
-                                             ui->addStateMapButton->width(),ui->addStateMapButton->height());
+            stateMapSpinBoxs.erase(stateMapSpinBoxs.begin()+row*2-2);
+            stateMapSpinBoxs.erase(stateMapSpinBoxs.begin()+row*2-2);
+            stateMapComboBoxs.erase(stateMapComboBoxs.begin()+row);
         }
     }
 }
@@ -394,12 +395,12 @@ void ModelSetting::on_buttonBox_accepted()
     }
     controller->setState2Color(state2Color);
     //元胞交互设置
-    if(ui->comboBox->currentIndex()==3||controller->getModelNeighborRuleType()!=ui->comboBox->currentIndex()){
-        controller->setModelNeighborRule(ui->comboBox->currentIndex());
-    }
     if(change){
         controller->init();
         mainWindow->reShowMap();
+    }
+    if(ui->comboBox->currentIndex()==3||controller->getModelNeighborRuleType()!=ui->comboBox->currentIndex()){
+        controller->setModelNeighborRule(ui->comboBox->currentIndex());
     }
 }
 

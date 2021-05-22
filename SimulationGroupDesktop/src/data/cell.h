@@ -27,6 +27,7 @@ public:
     int mapX,mapY;          //在地图中的坐标
     int id;
     int type=0;               //类型 -1:无元胞、0:基础元胞、1:anget
+    int count=0;
 private:
     std::vector<int> states;
 };
