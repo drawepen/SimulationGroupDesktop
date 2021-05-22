@@ -64,6 +64,11 @@ void Model::updateCellAndMap()
 void Model::update(int nowTime)
 {
     if(nowTime<=1){
+        for(Cell &cell:cells){
+            if(cell.spaceSize>0 && cell.space!=0){
+                memset(cell.space,0,cell.spaceSize);
+            }
+        }
         for(Action *action:actions){
             memset(action->publicSpace,0,action->publicSpaceSize);
         }

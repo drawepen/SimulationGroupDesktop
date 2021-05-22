@@ -122,7 +122,7 @@ void Action::execute(Cell &cell,int nowTime)
         ncells[index++]=nc->id;
     }
     ncells[index++]=cell.spaceSize;
-    ncells[index++]=1024*10240;
+    ncells[index++]=publicSpaceSize;
     ncells[index++]=cell.count;
 //    for(int i=0;i<len;++i){
 //        printf("%d ",states[i]);
@@ -142,7 +142,7 @@ void Action::execute(Cell &cell,int nowTime)
             nc->update(ncells[index++],nowTime);
         }
     }
-    if(cellMoveableSwitch && (type&10)==10 && ncells[0]>=0 && ncells[0]<cell.neighbors.size()){
+    if(cellMoveableSwitch && (type&2)==2 && ncells[0]>=0 && ncells[0]<cell.neighbors.size()){
         swap(cell.mapX,cell.neighbors[ncells[0]]->mapX);
         swap(cell.mapY,cell.neighbors[ncells[0]]->mapY);
     }

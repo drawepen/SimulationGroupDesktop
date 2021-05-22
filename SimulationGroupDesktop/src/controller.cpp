@@ -289,6 +289,7 @@ void Controller::newModel(std::string name){
             modelDeserialization(sqlQuery);
         }
     }
+    model.statistics(nowTime);
     isNewM=true;
 }
 

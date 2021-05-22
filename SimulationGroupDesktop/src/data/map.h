@@ -30,6 +30,7 @@ public:
         rowNum=value;
     }
     std::vector<std::vector<Cell*>> cells;
+    std::vector<std::vector<std::vector<Cell*>>> historyCells;
 private:
     int width=16; //元胞大小
     int height=16;
