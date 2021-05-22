@@ -53,7 +53,8 @@ public:
         return map.cells[y][x]->getState();
     }
     int getState(int x,int y,int time){
-        return map.cells[y][x]->getState(time);
+        //不做数组范围检测，仅用于可视化获取已执行的时刻的状态
+        return map.historicalCells[y][x][time]->getState(time);
     }
     void setState2Color(std::vector<StateColor> &state2Color){
         this->state2Color=state2Color;

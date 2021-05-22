@@ -365,15 +365,12 @@ std::string Controller::modelSerialize(){
     data.append(",").append(to_string(model.getCellSpaceSize()));
     data.append(",").append(to_string(128));
     //初始状态
-    int colCount=model.map.getColNum();
-    int rowCount=model.map.getRowNum();
-    temp=new char[colCount*rowCount*sizeof (int)+32];
-    for(int i=0;i<rowCount;++i){
-        for(int j=0;j<colCount;++j){
-            ((int*)temp)[i*colCount+j]=model.getState(j,i,0);
-        }
+    temp=new char[model.cells.size()*sizeof (int)+32];
+    int cI=0;
+    for(Cell &cell:model.cells){
+        ((int*)temp)[cI++]=cell.getState(0);
     }
-    data.append(",'").append(str2Hex(temp,colCount*rowCount*sizeof (int))).append("'");
+    data.append(",'").append(str2Hex(temp,model.cells.size()*sizeof (int))).append("'");
     delete[] temp;
     return data;
 }
@@ -425,14 +422,11 @@ void Controller::modelDeserialization(QSqlQuery &sqlQuery){
     model.setCellSpaceSize(sqlQuery.value(index++).toInt());
     sqlQuery.value(index++);
     //初始状态
-    int colCount=model.map.getColNum();
-    int rowCount=model.map.getRowNum();
     temp=sqlQuery.value(index++).toString().toStdString();
     str=hex2Str(temp);
     int *ss=(int *)str.c_str();
-    for(int i=0;i<rowCount;++i){
-        for(int j=0;j<colCount;++j){
-            model.map.cells[i][j]->update(ss[i*colCount+j],0);
-        }
+    int cI=0;
+    for(Cell &cell:model.cells){
+        cell.update(ss[cI++],0);
     }
 }

@@ -49,13 +49,17 @@ void Model::updateCellAndMap()
     }
     int index=0;
     map.cells.clear();
+    map.historicalCells.clear();
     for(int i=0,hLen=map.getRowNum();i<hLen;++i){
         map.cells.emplace_back();
+        map.historicalCells.emplace_back();
         for(int j=0,wLen=map.getColNum();j<wLen;++j){
             Cell *cell=&cells[index++];
             cell->mapX=j;
             cell->mapY=i;
             map.cells[i].push_back(cell);
+            map.historicalCells[i].emplace_back();
+            map.historicalCells[i][j].push_back(cell);
         }
     }
     updateNeighbor();
@@ -73,18 +77,19 @@ void Model::update(int nowTime)
             memset(action->publicSpace,0,action->publicSpaceSize);
         }
     }
-    bool positionChang=false;
     for(Cell &cell:cells){
         for(Action *action:actions){
             action->execute(cell,nowTime);
         }
-        //改变元胞位置
-        Cell *nc;
-        if(cellMoveableSwitch && (nc=map.cells[cell.mapY][cell.mapX])->id != cell.id){
+    }
+    //改变元胞位置
+    bool positionChang=false;
+    for(Cell &cell:cells){
+        if(cellMoveableSwitch && (map.cells[cell.mapY][cell.mapX])->id != cell.id){
             positionChang=true;
-            map.cells[nc->mapY][nc->mapX]=nc;
             map.cells[cell.mapY][cell.mapX]=&cell;
         }
+        map.historicalCells[cell.mapY][cell.mapX].push_back(&cell);
     }
     if(positionChang){
         updateNeighbor();
