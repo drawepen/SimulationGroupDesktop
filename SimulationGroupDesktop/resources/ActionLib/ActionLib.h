@@ -185,20 +185,22 @@ int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime
 //糖域模型
 //环境：随机增糖，产生新生命
 //元胞：先判断己方是否需要逃跑、是否发动战争、对方是否逃跑、战争判定、是否接受合作邀请、是否发出合作邀请(向后遍历即id大的)、是否移动到环境
-//糖域模型1
+//糖域模型(合作+竞争+长远)
 int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     int sugarMax=9;//单块空地糖量上限
-    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.02;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
-    int newState=ncells[0];
-    int cellCount=ncells[len*2+2];
-    //通知状态值[0,cellCount):已执行的时间点//用于判断是否执行过
-    //通知状态值[cellCount,...):0无1空地糖被去走
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
     int *pSpace=(int*)publicSpace;
-    pSpace[ncells[len*2]]=nowTime;
     //空地
-    if(newState<=sugarMax){
-        if(pSpace[cellCount+ncells[len*2]]==1){
-            pSpace[cellCount+ncells[len*2]]=0;
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
             ncells[len]=0;
             return 0;
         }
@@ -207,141 +209,726 @@ int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime
             return 0;
         }
         int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
-        newState+=rand()%maxR;
-        if(newState>sugarMax){
-            newState=sugarMax;
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
         }
         //糖量达上限，随机产生新生命体
-        if(newState==sugarMax && rand()*1.0/RAND_MAX<leftRand){
-            newState=sugarMax+sugarMax;
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
         }
-        ncells[len]=newState;
+        ncells[len]=state;
         return 0;
     }
     //生命体
-    newState-=1;
-    if(newState<=sugarMax){
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
         ncells[len]=0;
         return 0;
     }
     int64_t optionalS=0;
     char *optional=(char*)(&optionalS);
-    int index=0,maxV=0;
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
     for(int i=1;i<len;++i){
-        if(ncells[i]>sugarMax){
-            continue;
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
         }
-        if(ncells[i]>maxV){
-            maxV=ncells[i];
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
+            }else{
+                if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                    //合作
+                    value=(cooFrom+cooTo)*1.0/2;
+                }else if(ncells[0]>ncells[i]){
+                    //竞争
+                    int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                    value=a*1.0/(a+b)*(b-(a+b)*compWast-1);
+                }
+            }
+        }
+        if(value>maxV){
+            maxV=value;
             index=0;
             optional[index++]=i;
-        }else if(ncells[i]==maxV){
+        }else if(value==maxV){
             optional[index++]=i;
         }
     }
-    if(index>0){
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
         //移动
-        int oindex=optional[rand()%index];
-        ncells[0]=oindex-1;
-        ncells[len]=newState+ncells[oindex];
-        if(pSpace[ncells[len*2+oindex]]!=nowTime){
-            pSpace[cellCount+ncells[len*2+oindex]]=1;
-            return 0|10;
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
         }else{
-            ncells[len+oindex]=0;
-            return 1|10;
+            if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                //合作
+                int v=rand()%(cooTo-cooFrom+1)+cooFrom;
+                ncells[len]=state+v-1;
+                v=rand()%(cooTo-cooFrom+1)+cooFrom;
+                ncells[len+i]+=v;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=2;
+                pSpace[cellCount*2+nid]=v;
+                pSpace[cellCount+id]=2;
+                return 1;
+            }else if(ncells[0]>ncells[i]){
+                //竞争
+                int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                int op;
+                if(rand()*1.0/RAND_MAX < a*1.0/(a+b)){
+                    //胜利
+                    ncells[len]=state+(b-(a+b)*compWast-1);
+                    op=-ncells[i];
+                    ncells[len+i]=0;
+                }else{
+                    //失败
+                    ncells[len]=0;
+                    op=(a-(a+b)*compWast-1);
+                    ncells[len+i]+=op;
+                }
+                ncells[0]=i-1;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=3;
+                pSpace[cellCount*2+nid]=op;
+                pSpace[cellCount+id]=3;
+                return 1|2;
+            }
         }
     }else{
-        ncells[len]=newState;
+        if(len>1 && blankCount==len-1 && ncells[0]>=32){
+            //长远决策，糖量充足可移动
+            index=0;
+            for(int i=1;i<len;++i){
+                int nid=ncells[len*2+i];
+                if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+                    optional[index++]=i;
+                }
+            }
+            if(index>0){
+                int i=optional[rand()%index];
+                int nid=ncells[len*2+i];
+                ncells[0]=i;
+                ncells[len]=state-1;
+                ncells[len+i]=0;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=1;
+                pSpace[cellCount+id]=1;
+                return 1|2;
+            }
+        }
+        ncells[len]=state;
         return 0;
     }
 }
-
-//随机智能对群体智能的影响仿真实验1
+//糖域模型(合作)
 int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
-    //1,2,3节点|0空地
-    if(ncells[0]==0){
+    int sugarMax=9;//单块空地糖量上限
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
+    int *pSpace=(int*)publicSpace;
+    //空地
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
+            ncells[len]=0;
+            return 0;
+        }
+        if(ncells[0]==0 && rand()*1.0/RAND_MAX>=bankSugRand){
+            ncells[len]=0;
+            return 0;
+        }
+        int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
+        }
+        //糖量达上限，随机产生新生命体
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    //生命体
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
         ncells[len]=0;
         return 0;
     }
-    int sNum=3;
-    if(nowTime==1){
-        //分配机器人类型 1机器人2Agent
-        double robotRate=0.05;
-        if(rand()*1.0/(RAND_MAX+1) < robotRate){
-            ((int*)privateSpace)[0]=1;
-        }else{
-            ((int*)privateSpace)[0]=2;
+    int64_t optionalS=0;
+    char *optional=(char*)(&optionalS);
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
+    for(int i=1;i<len;++i){
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
         }
-    }
-    if(((int*)privateSpace)[0]==1){
-        //机器人
-        double robotP=0.3;
-        if(rand()*1.0/(RAND_MAX+1) < robotP){
-            ncells[len]=(rand()%3)+1;
-        }else{
-            //Agent
-            long long c1=0;
-            char *cs=(char*)(&c1);
-            for(int i=1;i<len;++i){
-                cs[ncells[i]]++;
-            }
-            if(cs[ncells[0]]==0){
-                ncells[len]=ncells[0];
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
             }else{
-                int minI=1,count=1;
-                for(int i=2;i<=sNum;++i){
-                    if(cs[i]<cs[minI]){
-                        minI=i;
-                        count=1;
-                    }else if(cs[i]==cs[minI]){
-                        count+=1;
-                    }
+                if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                    //合作
+                    value=(cooFrom+cooTo)*1.0/2;
                 }
-                if(count>1){
-                    int num=rand()%count;
-                    for(int i=minI+1,j=0;i<=sNum && j<num;++i){
-                        if(cs[i]==cs[minI]){
-                            minI=i;
-                            ++j;
-                         }
-                    }
-                }
-                ncells[len]=minI;
             }
         }
-    }else if(((int*)privateSpace)[0]==2){
-        //Agent
-        long long c1=0;
-        char *cs=(char*)(&c1);
-        for(int i=1;i<len;++i){
-            cs[ncells[i]]++;
-        }
-        if(cs[ncells[0]]==0){
-            ncells[len]=ncells[0];
-        }else{
-            int minI=1,count=1;
-            for(int i=2;i<=sNum;++i){
-                if(cs[i]<cs[minI]){
-                    minI=i;
-                    count=1;
-                }else if(cs[i]==cs[minI]){
-                    count+=1;
-                }
-            }
-            if(count>1){
-                int num=rand()%count;
-                for(int i=minI+1,j=0;i<=sNum && j<num;++i){
-                    if(cs[i]==cs[minI]){
-                        minI=i;
-                        ++j;
-                     }
-                }
-            }
-            ncells[len]=minI;
+        if(value>maxV){
+            maxV=value;
+            index=0;
+            optional[index++]=i;
+        }else if(value==maxV){
+            optional[index++]=i;
         }
     }
-    return 0;
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
+        }else{
+            //合作
+            int v=rand()%(cooTo-cooFrom+1)+cooFrom;
+            ncells[len]=state+v-1;
+            v=rand()%(cooTo-cooFrom+1)+cooFrom;
+            ncells[len+i]+=v;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=2;
+            pSpace[cellCount*2+nid]=v;
+            pSpace[cellCount+id]=2;
+            return 1;
+        }
+    }else{
+        ncells[len]=state;
+        return 0;
+    }
+}
+//糖域模型(竞争)
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    int sugarMax=9;//单块空地糖量上限
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
+    int *pSpace=(int*)publicSpace;
+    //空地
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
+            ncells[len]=0;
+            return 0;
+        }
+        if(ncells[0]==0 && rand()*1.0/RAND_MAX>=bankSugRand){
+            ncells[len]=0;
+            return 0;
+        }
+        int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
+        }
+        //糖量达上限，随机产生新生命体
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    //生命体
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
+        ncells[len]=0;
+        return 0;
+    }
+    int64_t optionalS=0;
+    char *optional=(char*)(&optionalS);
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
+    for(int i=1;i<len;++i){
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
+        }
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
+            }else{
+                if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                }else if(ncells[0]>ncells[i]){
+                    //竞争
+                    int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                    value=a*1.0/(a+b)*(b-(a+b)*compWast-1);
+                }
+            }
+        }
+        if(value>maxV){
+            maxV=value;
+            index=0;
+            optional[index++]=i;
+        }else if(value==maxV){
+            optional[index++]=i;
+        }
+    }
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
+        }else{
+            if(ncells[0]>ncells[i]){
+                //竞争
+                int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                int op;
+                if(rand()*1.0/RAND_MAX < a*1.0/(a+b)){
+                    //胜利
+                    ncells[len]=state+(b-(a+b)*compWast-1);
+                    op=-ncells[i];
+                    ncells[len+i]=0;
+                }else{
+                    //失败
+                    ncells[len]=0;
+                    op=(a-(a+b)*compWast-1);
+                    ncells[len+i]+=op;
+                }
+                ncells[0]=i-1;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=3;
+                pSpace[cellCount*2+nid]=op;
+                pSpace[cellCount+id]=3;
+                return 1|2;
+            }
+        }
+    }else{
+        ncells[len]=state;
+        return 0;
+    }
+}
+//糖域模型(合作+竞争)
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    int sugarMax=9;//单块空地糖量上限
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
+    int *pSpace=(int*)publicSpace;
+    //空地
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
+            ncells[len]=0;
+            return 0;
+        }
+        if(ncells[0]==0 && rand()*1.0/RAND_MAX>=bankSugRand){
+            ncells[len]=0;
+            return 0;
+        }
+        int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
+        }
+        //糖量达上限，随机产生新生命体
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    //生命体
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
+        ncells[len]=0;
+        return 0;
+    }
+    int64_t optionalS=0;
+    char *optional=(char*)(&optionalS);
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
+    for(int i=1;i<len;++i){
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
+        }
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
+            }else{
+                if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                    //合作
+                    value=(cooFrom+cooTo)*1.0/2;
+                }else if(ncells[0]>ncells[i]){
+                    //竞争
+                    int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                    value=a*1.0/(a+b)*(b-(a+b)*compWast-1);
+                }
+            }
+        }
+        if(value>maxV){
+            maxV=value;
+            index=0;
+            optional[index++]=i;
+        }else if(value==maxV){
+            optional[index++]=i;
+        }
+    }
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
+        }else{
+            if(std::min(ncells[i],ncells[0])*1.0/std::max(ncells[i],ncells[0])>cooComRate){
+                //合作
+                int v=rand()%(cooTo-cooFrom+1)+cooFrom;
+                ncells[len]=state+v-1;
+                v=rand()%(cooTo-cooFrom+1)+cooFrom;
+                ncells[len+i]+=v;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=2;
+                pSpace[cellCount*2+nid]=v;
+                pSpace[cellCount+id]=2;
+                return 1;
+            }else if(ncells[0]>ncells[i]){
+                //竞争
+                int a=ncells[0]-sugarMax,b=ncells[i]-sugarMax;
+                int op;
+                if(rand()*1.0/RAND_MAX < a*1.0/(a+b)){
+                    //胜利
+                    ncells[len]=state+(b-(a+b)*compWast-1);
+                    op=-ncells[i];
+                    ncells[len+i]=0;
+                }else{
+                    //失败
+                    ncells[len]=0;
+                    op=(a-(a+b)*compWast-1);
+                    ncells[len+i]+=op;
+                }
+                ncells[0]=i-1;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=3;
+                pSpace[cellCount*2+nid]=op;
+                pSpace[cellCount+id]=3;
+                return 1|2;
+            }
+        }
+    }else{
+        ncells[len]=state;
+        return 0;
+    }
+}
+//糖域模型(无高级行为)
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    int sugarMax=9;//单块空地糖量上限
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
+    int *pSpace=(int*)publicSpace;
+    //空地
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
+            ncells[len]=0;
+            return 0;
+        }
+        if(ncells[0]==0 && rand()*1.0/RAND_MAX>=bankSugRand){
+            ncells[len]=0;
+            return 0;
+        }
+        int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
+        }
+        //糖量达上限，随机产生新生命体
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    //生命体
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
+        ncells[len]=0;
+        return 0;
+    }
+    int64_t optionalS=0;
+    char *optional=(char*)(&optionalS);
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
+    for(int i=1;i<len;++i){
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
+        }
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
+            }
+        }
+        if(value>maxV){
+            maxV=value;
+            index=0;
+            optional[index++]=i;
+        }else if(value==maxV){
+            optional[index++]=i;
+        }
+    }
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
+        }
+    }else{
+        ncells[len]=state;
+        return 0;
+    }
+}
+//糖域模型(长远)
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    int sugarMax=9;//单块空地糖量上限
+    double sugarRand=0.5,leftRand=0.1,bankSugRand=0.03;//生产糖平均速度（具体大小随机）、生命生成概率、空地开始生产糖概率
+    int cooFrom=-1,cooTo=4;//合作收益区间
+    double cooComRate=0.5;//合作竞争判断比率，持糖量差距小于cooComRate合作，否则竞争
+    double compWast=0.1;//竞争损耗比
+    int state=ncells[0];
+    int cellCount=ncells[len*3+2];
+    //通知状态值[0,cellCount):标记时的时间点//用于判断是否是当前时刻的标记
+    //通知状态值[cellCount,cellCount*2):0无1空地糖被取走或agent已发生移动2agent合作3agent被攻击
+    //通知状态值[cellCount*2,...):合作或被攻击获得的加糖量（正负都有）
+    int *pSpace=(int*)publicSpace;
+    //空地
+    if(state<=sugarMax){
+        if(pSpace[ncells[len*2]]==nowTime && pSpace[cellCount+ncells[len*2]]==1){
+            ncells[len]=0;
+            return 0;
+        }
+        if(ncells[0]==0 && rand()*1.0/RAND_MAX>=bankSugRand){
+            ncells[len]=0;
+            return 0;
+        }
+        int maxR=((int)sugarRand)*2+1+(((int)sugarRand)<sugarRand);
+        state+=rand()%maxR;
+        if(state>sugarMax){
+            state=sugarMax;
+        }
+        //糖量达上限，随机产生新生命体
+        if(state==sugarMax && rand()*1.0/RAND_MAX<leftRand){
+            state=sugarMax+sugarMax;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    //生命体
+    int id=ncells[len*2];
+    if(pSpace[id]==nowTime && (pSpace[cellCount+id]==2||pSpace[cellCount+id]==3)){
+        state+=pSpace[cellCount*2+id]-1;
+        if(state<=sugarMax){
+            state=0;
+        }
+        ncells[len]=state;
+        return 0;
+    }
+    state-=1;
+    if(state<=sugarMax){
+        ncells[len]=0;
+        return 0;
+    }
+    int64_t optionalS=0;
+    char *optional=(char*)(&optionalS);
+    int index=0,blankCount=0;
+    double maxV=0;
+    //分析利润
+    for(int i=1;i<len;++i){
+        int nid=ncells[len*2+i];
+        double value=0;//预计收益
+        if(ncells[i]==0){
+            blankCount++;
+        }
+        if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+            if(ncells[i]<=sugarMax){
+                //吃糖
+                value=ncells[i]-1;
+            }
+        }
+        if(value>maxV){
+            maxV=value;
+            index=0;
+            optional[index++]=i;
+        }else if(value==maxV){
+            optional[index++]=i;
+        }
+    }
+    pSpace[id]=nowTime;
+    pSpace[cellCount+id]=0;
+    if(maxV>0){
+        int i=optional[rand()%index];
+        int nid=ncells[len*2+i];
+        if(ncells[i]<=sugarMax){
+            //吃糖
+            ncells[len]=state+ncells[i]-1;
+            ncells[0]=i-1;
+            ncells[len+i]=0;
+            pSpace[nid]=nowTime;
+            pSpace[cellCount+nid]=1;
+            pSpace[cellCount+id]=1;
+            return 1|2;
+        }
+    }else{
+        if(len>1 && blankCount==len-1 && ncells[0]>=32){
+            //长远决策，糖量充足可移动
+            index=0;
+            for(int i=1;i<len;++i){
+                int nid=ncells[len*2+i];
+                if(pSpace[nid]!=nowTime || pSpace[cellCount+nid]==0){
+                    optional[index++]=i;
+                }
+            }
+            if(index>0){
+                int i=optional[rand()%index];
+                int nid=ncells[len*2+i];
+                ncells[0]=i;
+                ncells[len]=state-1;
+                ncells[len+i]=0;
+                pSpace[nid]=nowTime;
+                pSpace[cellCount+nid]=1;
+                pSpace[cellCount+id]=1;
+                return 1|2;
+            }
+        }
+        ncells[len]=state;
+        return 0;
+    }
 }
 //随机智能对群体智能的影响仿真实验2
 int mostDifferent(int *ncells,int len){
@@ -354,8 +941,8 @@ int mostDifferent(int *ncells,int len){
     if(cs[ncells[0]]==0){
         return ncells[0];
     }
-    int minV=cs[1],index=1;
-    cs[1]=1;
+    int minV=cs[1],index=0;
+    cs[index++]=1;
     for(int i=2;i<=sNum;++i){
         if(cs[i]<minV){
             minV=cs[i];
@@ -381,8 +968,8 @@ int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime
             ncells[0]=(rand()%3)+1;
         }else{
             space[0]=2;
-            space[1]=(rand()%4)+2;
-            space[2]=rand();
+            space[1]=(rand()%4)+2;//循环次数K [2,5]
+            space[2]=rand();//选择保留原颜色概率
         }
     }
     if(space[0]==1){
@@ -400,7 +987,6 @@ int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime
         //如果发现历史同间隔长度循环选择同一颜色k次，随机(概率p/RAND_MAX)不改变颜色
         int k=space[1],p=space[2];
         int count=space[3+newState*3+0],iTime=space[3+newState*3+1],lastTime=space[3+newState*3+2];
-        int index=space[1],hl=space[2];
         if(nowTime-lastTime==iTime){
             count++;
             if(count>=k && rand()<p){
@@ -415,11 +1001,97 @@ int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime
             space[3+newState*3+1]=newITime;
         }
         space[3+newState*3+2]=nowTime;
+
         ncells[len]=newState;
     }
     return 0;
 }
+//随机智能对群体智能的影响仿真实验2(+决策延迟)
+int mostDifferent(int *ncells,int len){
+    int64_t c1=0;
+    int sNum=3;
+    char *cs=(char*)(&c1);
+    for(int i=1;i<len;++i){
+        cs[ncells[i]]++;
+    }
+    if(cs[ncells[0]]==0){
+        return ncells[0];
+    }
+    int minV=cs[1],index=0;
+    cs[index++]=1;
+    for(int i=2;i<=sNum;++i){
+        if(cs[i]<minV){
+            minV=cs[i];
+            index=0;
+            cs[index++]=i;
+        }else if(cs[i]==minV){
+            cs[index++]=i;
+        }
+    }
+    return cs[rand()%index];
+}
+int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
+    //1,2,3节点|0空地
+    if(ncells[0]==0){
+        ncells[len]=0;
+        return 0;
+    }
+    int *space=(int*)privateSpace;
+    if(nowTime==1){
+        //分配机器人类型 1机器人2Agent
+        if(ncells[0] < 0){
+            space[0]=1;
+            ncells[0]=(rand()%3)+1;
+        }else{
+            space[0]=2;
+            space[1]=(rand()%4)+2;//循环次数K [2,5]
+            space[2]=rand();//保留原颜色概率P
+            space[3]=(rand()%4)+1;//决策延迟T帧
+        }
+    }
+    if(space[0]==1){
+        //机器人
+        if((nowTime%4)!=0){//机器人每隔固定4帧决策一次
+            ncells[len]=ncells[0];
+            return 0;
+        }
+        double robotP=0.3;
+        if(rand()*1.0/(RAND_MAX+1) < robotP){
+            ncells[len]=(rand()%3)+1;
+        }else{
+            ncells[len]=mostDifferent(ncells,len);
+        }
+    }else if(space[0]==2){
+        //Agent
+        int k=space[1],p=space[2],t=space[3];
+        //每隔T帧才进行一次决策反映
+        if((nowTime%t)!=0){
+            ncells[len]=ncells[0];
+            return 0;
+        }
+        //优先选择最不同的颜色
+        int newState=mostDifferent(ncells,len);
+        //如果发现历史同间隔长度循环选择同一颜色k次，随机(概率p/RAND_MAX)不改变颜色
+        int count=space[3+newState*3+0],iTime=space[3+newState*3+1],lastTime=space[3+newState*3+2];
+        if(nowTime-lastTime==iTime){
+            count++;
+            if(count>=k && rand()<p){
+                newState=ncells[0];
+            }
+        }
+        int newITime=nowTime-space[3+newState*3+2];
+        if(newITime==space[3+newState*3+1]){
+            space[3+newState*3+0]++;
+        }else{
+            space[3+newState*3+0]=(space[3+newState*3+2]!=0?1:0);
+            space[3+newState*3+1]=newITime;
+        }
+        space[3+newState*3+2]=nowTime;
 
+        ncells[len]=newState;
+    }
+    return 0;
+}
 //交通流量模拟
 int execute(int *ncells,int len,void *privateSpace,void *publicSpace,int nowTime){
     //0空地1墙2车辆产生3车辆消失10车

@@ -1,3 +1,4 @@
+//#define DATA_S
 #include "model.h"
 #include <cstdlib>
 #include <ctime>
@@ -95,6 +96,34 @@ void Model::update(int nowTime)
         updateNeighbor();
     }
     statistics(nowTime);
+#ifdef DATA_S
+    if(nowTime==1){
+        printf("\n0,");
+    }
+    if((nowTime%5)==0){
+        std::vector<int> sugtCounts;
+        double sum=0;
+        for(Cell &cell:cells){
+            int sug=cell.getState(nowTime)-9;
+            if(sug>0){
+                sugtCounts.push_back(sug);
+                sum+=sug;
+            }
+        }
+        if(sugtCounts.size()>0){
+            double ave=sum/sugtCounts.size();
+            sum=0;
+            for(int sug:sugtCounts){
+                sum+=(sug-ave)*(sug-ave);
+            }
+            sum/=sugtCounts.size();
+        }else{
+            sum=0;
+        }
+//        printf("%lf,",sum);fflush(stdout);//方差
+        printf("%d,",sugtCounts.size());fflush(stdout);//数量
+    }
+#endif
 }
 
 void Model::setNeighborRule(std::vector<std::pair<int,int>> &relCoos,int type)

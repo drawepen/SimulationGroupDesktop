@@ -419,8 +419,10 @@ void Controller::modelDeserialization(QSqlQuery &sqlQuery){
     }
     //agent
     model.setCellMoveableSwitch(sqlQuery.value(index++).toInt());
-    model.setCellSpaceSize(sqlQuery.value(index++).toInt());
+    model.setCellSpaceSize(sqlQuery.value(index++).toInt());//<-标记1
     sqlQuery.value(index++);
+
+    init();//TODO:不加这条[糖域模型]会有bug，初步排查与标记1有关，执行标记1后不init出错，其他基本无影响，但未使用私有空间，未解之谜
     //初始状态
     temp=sqlQuery.value(index++).toString().toStdString();
     str=hex2Str(temp);
