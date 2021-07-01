@@ -36,8 +36,9 @@ build*/*
 bin/*
 
 #IDE文件
-.idea/
+*.idea/
 cmake-build-debug/
 
 #vsCode文件
-.vscode/
+*.vscode/
+*.pro.user
